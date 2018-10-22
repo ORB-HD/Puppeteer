@@ -4,6 +4,7 @@ src/config.h
 tags
 
 build/
+debug/
 Debug/
 Release/
 RelWithDebInfo/
