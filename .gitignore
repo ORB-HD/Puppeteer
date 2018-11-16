@@ -2,8 +2,9 @@ src/config.h
 .*.swp
 
 tags
-
+**/debug
 build/
+debug/
 Debug/
 Release/
 RelWithDebInfo/
