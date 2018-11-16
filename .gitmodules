@@ -1,3 +1,3 @@
 [submodule "vendor/c3dfile"]
 	path = vendor/c3dfile
-	url = git@github.com:ORB-HD/c3dfile
+	url = https://github.com/ORB-HD/c3dfile
