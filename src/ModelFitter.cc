@@ -352,6 +352,10 @@ void ModelFitter::setup() {
 		assert (marker_coords.size() == marker_names.size());
 
 		for (size_t marker_idx = 0; marker_idx < marker_coords.size(); marker_idx++) {
+			if (!data->markerExists(marker_names[marker_idx].c_str())) {
+				cerr << "Warning: Model marker'" << marker_names[marker_idx] << "' not present in c3d data. Ignoring marker during fit!" << endl;
+				continue;
+			}
 			rbdlVector3d marker_data_pos = ConvertVector<rbdlVector3d, Vector3d> (data->getMarkerCurrentPosition (marker_names[marker_idx].c_str()));
 			internal->marker_names.push_back(marker_names[marker_idx]);
 
