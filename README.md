@@ -5,7 +5,7 @@ Copyright (c) 2018 Felix Richter <judge@felixrichter.tech>
 Tip of the day: try the new scripting feature by running
 
     ./puppeteer subject3m.lua -s scripts/motionsickness.lua
-
+    
 # Usage
 
 Puppeteer comes with an example model and motion capture data. To load them
@@ -13,6 +13,19 @@ pass both model and motion capture data as arguments to the Puppeteer
 executable, e.g.:
 
     ./puppeteer model.lua data/testdata.c3d
+    
+# Build
+
+Do a recursive clone of the repoistory to also initialise all subrepos:
+
+>	git clone --recursive https://github.com/ORB-HD/puppeteer
+	
+if not do you will have to initialise them yourself: 
+
+>	git submodule init
+>	
+>	git submodule update
+	
 
 # Dependencies
 
