@@ -825,11 +825,13 @@ void PuppeteerApp::fitAnimation() {
 	bool success = true;
 	int i = 0;
 
+	auto current_model_state = markerModel->modelStateQ;
+
 	for (i = 0; i <= frame_count; i++) {
 		progress.setValue(i);
 		
-		bool fit_result = modelFitter->computeModelAnimationFromMarkers (markerModel->modelStateQ, animationData, markerData->getFirstFrame() + i, markerData->getFirstFrame() + i);
-
+		bool fit_result = modelFitter->computeModelAnimationFromMarkers (current_model_state, animationData, markerData->getFirstFrame() + i, markerData->getFirstFrame() + i);
+		current_model_state = animationData->keyFrames[animationData->keyFrames.size()-1].state;
 		if (progress.wasCanceled()) {
 			qDebug() << "canceled!";
 			success = false;
