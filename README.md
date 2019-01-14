@@ -7,7 +7,11 @@ Copyright (c) 2018 Felix Richter <judge@felixrichter.tech>
 Tip of the day: try the new scripting feature by running
 
     ./puppeteer subject3m.lua -s scripts/motionsickness.lua
-    
+
+# Demo
+
+[![Puppeteer Demo](https://www.fysx.org/~martin/shared/puppeteer.png)](https://www.youtube.com/watch?v=-BVTGs8xCnQ)
+
 # Usage
 
 Puppeteer comes with an example model and motion capture data. To load them
