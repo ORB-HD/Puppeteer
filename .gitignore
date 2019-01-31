@@ -8,3 +8,6 @@ debug/
 Debug/
 Release/
 RelWithDebInfo/
+cmake-build-debug/
+.idea/
+
