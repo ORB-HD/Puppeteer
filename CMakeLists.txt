@@ -69,6 +69,7 @@ SET ( SCENEGL_SRCS
 SET ( QtGLBaseApp_SRCS
 	src/main.cc
 	src/GLWidget.cc
+	src/ExpressionLuaTable.cc
 	src/PuppeteerApp.cc
 	glew/src/glew.c
 	## CHART STUFF
