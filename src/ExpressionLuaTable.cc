@@ -38,18 +38,40 @@ extern "C"
 #include "utils/serialize.lua.h"
 
 void bail(lua_State *L, const char *msg);
-std::string get_file_directory (const char* filename);
 
-string LuaParameterExpression::serialize() {
-    string result = operation + "(";
+std::string get_file_directory(const char *filename);
+
+string LuaParameterExpression::serialize(int level) {
+    string result;
     if (operation == "var") {
-        result += name;
-        result += "=";
-        result += to_string(value);
+        return name;
     } else if (operation == "const") {
-        result += to_string(value);
+        // Return value without trailing zeros, see https://stackoverflow.com/a/13709929
+        result = to_string(value);
+        result.erase(result.find_last_not_of('0') + 1, std::string::npos);
+        result.erase(result.find_last_not_of('.') + 1, std::string::npos);
+        return result;
+    } else if (operation == "mul") {
+        result = parameters[0].serialize(level + 1) + " * " + parameters[1].serialize(level + 1);
+    } else if (operation == "add") {
+        result = parameters[0].serialize(level + 1) + " + " + parameters[1].serialize(level + 1);
+    } else if (operation == "div") {
+        result = parameters[0].serialize(level + 1) + " / " + parameters[1].serialize(level + 1);
+    } else if (operation == "sub") {
+        result = parameters[0].serialize(level + 1) + " - " + parameters[1].serialize(level + 1);
+    } else if (operation == "mod") {
+        result = parameters[0].serialize(level + 1) + " % " + parameters[1].serialize(level + 1);
+    } else if (operation == "pow") {
+        result = parameters[0].serialize(level + 1) + " ^ " + parameters[1].serialize(level + 1);
+    } else if (operation == "eq") {
+        result = parameters[0].serialize(level + 1) + " == " + parameters[1].serialize(level + 1);
+    } else if (operation == "lt") {
+        result = parameters[0].serialize(level + 1) + " < " + parameters[1].serialize(level + 1);
+    } else if (operation == "le") {
+        result = parameters[0].serialize(level + 1) + " <= " + parameters[1].serialize(level + 1);
     } else {
         int i = 0;
+        result = operation + "(";
         for (LuaParameterExpression p : parameters) {
             result += p.serialize();
             if (i < parameters.size() - 1) {
@@ -57,9 +79,17 @@ string LuaParameterExpression::serialize() {
             }
             i++;
         }
+        result = result + ")";
+        return result;
     }
-    result += ")";
+    if (level > 0) {
+        return "(" + result + ")";
+    }
     return result;
+}
+
+string LuaParameterExpression::serialize() {
+    return serialize(0);
 }
 
 double LuaParameterExpression::evaluate() {
@@ -159,25 +189,25 @@ std::string serializeOrderedLuaTableWithExpressions(LuaTable tbl) {
     return result;
 }
 
-LuaTable luaTableFromFileWithExpressions (const char* _filename) {
+LuaTable luaTableFromFileWithExpressions(const char *_filename) {
     LuaTable result;
 
     result.filename = _filename;
     result.luaStateRef = new LuaStateRef();
     result.luaStateRef->L = luaL_newstate();
     result.luaStateRef->count = 1;
-    luaL_openlibs (result.luaStateRef->L);
+    luaL_openlibs(result.luaStateRef->L);
 
     // Add the directory of _filename to package.path
-    result.addSearchPath(get_file_directory (_filename).c_str());
+    result.addSearchPath(get_file_directory(_filename).c_str());
 
     luaL_dostring(result.luaStateRef->L, expressions_lua);
     // run the file we
     if (luaL_dofile (result.luaStateRef->L, _filename)) {
-        bail (result.luaStateRef->L, "Error running file: ");
+        bail(result.luaStateRef->L, "Error running file: ");
     }
 
-    result.luaRef = luaL_ref (result.luaStateRef->L, LUA_REGISTRYINDEX);
+    result.luaRef = luaL_ref(result.luaStateRef->L, LUA_REGISTRYINDEX);
 
     return result;
 }

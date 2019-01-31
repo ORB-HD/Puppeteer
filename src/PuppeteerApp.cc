@@ -39,6 +39,7 @@
 #include "Scene.h"
 #include "Model.h"
 #include "MarkerData.h"
+#include "ExpressionLuaTable.h"
 #include "ModelFitter.h"
 #include "Animation.h"
 #include "Scripting.h"
@@ -1032,9 +1033,9 @@ void PuppeteerApp::updatePropertiesForFrame (unsigned int frame_id) {
 	QtProperty *body_group = groupManager->addProperty("Body");
 	
 	// mass
-	QtProperty *mass_property = doubleManager->addProperty("mass");
-	double mass = markerModel->getBodyMass (frame_id);
-	doubleManager->setValue (mass_property, mass);
+	QtProperty *mass_property = stringManager->addProperty("mass");
+	LuaParameterExpression mass = markerModel->getBodyMass (frame_id);
+	stringManager->setValue (mass_property, QString::fromStdString(mass.serialize()));
 	registerProperty (mass_property, ("body_mass"));
 	body_group->addSubProperty (mass_property);
 

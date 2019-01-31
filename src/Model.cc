@@ -570,8 +570,8 @@ void Model::setBodyMass (int frame_id, double mass) {
 	(*luaTable)["frames"][frame_id]["body"]["mass"] = mass;
 }
 
-double Model::getBodyMass (int frame_id) {
-	return (*luaTable)["frames"][frame_id]["body"]["mass"].getDefault(0.);
+LuaParameterExpression Model::getBodyMass (int frame_id) {
+	return (*luaTable)["frames"][frame_id]["body"]["mass"].get<LuaParameterExpression>();
 }
 
 void Model::setBodyCOM (int frame_id, const Vector3f &com) {

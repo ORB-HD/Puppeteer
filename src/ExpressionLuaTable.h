@@ -26,7 +26,6 @@
 #ifndef MARKER_MODEL_LUA_EXPRESSIONS
 #define MARKER_MODEL_LUA_EXPRESSIONS
 
-#include "Model.h"
 #include <rbdl/rbdl_math.h>
 #include <rbdl/addons/luamodel/luatables.h>
 
@@ -38,6 +37,7 @@ struct LuaParameterExpression {
 	string name;
 	double value;
 
+	string serialize(int level);
 	string serialize();
 	double evaluate();
 };

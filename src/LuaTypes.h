@@ -27,8 +27,16 @@
 #define MARKER_MODEL_LUA_TYPES
 
 #include "Model.h"
+#include "ExpressionLuaTable.h"
 #include <rbdl/rbdl_math.h>
 #include <rbdl/addons/luamodel/luatables.h>
+
+extern "C"
+{
+#include "lua5.1/lua.h"
+#include "lua5.1/lauxlib.h"
+#include "lua5.1/lualib.h"
+}
 
 // SimpleMath Vector3f
 template<> Vector3f LuaTableNode::getDefault<Vector3f>(const Vector3f &default_value) { 
@@ -379,6 +387,45 @@ template<> VisualsData LuaTableNode::getDefault<VisualsData>(const VisualsData &
 	}
 
 	stackRestore();
+
+	return result;
+}
+
+template<>
+LuaParameterExpression LuaTableNode::get<LuaParameterExpression>() {
+	LuaParameterExpression result = LuaParameterExpression();
+
+	if (exists()) {
+		LuaTable custom_table;
+		int type;
+		if (stackQueryValue()) {
+            type = lua_type(luaTable->L, -1);
+            if (type == LUA_TTABLE) {
+                stackRestore();
+                custom_table = stackQueryTable();
+                result.operation = custom_table["operation"].get<std::string>();
+                result.name = custom_table["name"].get<std::string>();
+                result.value = custom_table["value"].get<double>();
+                stackRestore();
+
+                if (custom_table["p1"].exists()) {
+                    result.parameters.push_back(custom_table["p1"].get<LuaParameterExpression>());
+                    if (custom_table["p2"].exists()) {
+                        result.parameters.push_back(custom_table["p2"].get<LuaParameterExpression>());
+                    }
+                }
+            } else {
+                result.value = 0;
+                result.operation = "const";
+                result.value = lua_tonumber (luaTable->L, -1);
+                stackRestore();
+            }
+		}
+	} else {
+		result.value = 0;
+		result.operation = "const";
+		stackRestore();
+	}
 
 	return result;
 }
