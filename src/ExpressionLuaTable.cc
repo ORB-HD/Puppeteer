@@ -176,7 +176,7 @@ std::string serializeOrderedLuaTableWithExpressions(LuaTable tbl) {
         if (lua_pcall(tbl.L, 3, 1, 0)) {
             bail(tbl.L, "Error while serializing: ");
         }
-        result = string("return ") + lua_tostring (tbl.L, -1);
+        result = lua_tostring (tbl.L, -1);
     } else {
         cerr << "Cannot serialize global Lua state!" << endl;
         abort();
