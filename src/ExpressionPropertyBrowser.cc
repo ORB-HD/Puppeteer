@@ -78,7 +78,7 @@ ExpressionVector3DPropertyManager::ExpressionVector3DPropertyManager(QObject *pa
 
     d_ptr->m_stringPropertyManager = new QtStringPropertyManager(this);
     connect(d_ptr->m_stringPropertyManager, SIGNAL(valueChanged(QtProperty * , QString)), this,
-            SLOT(slotDoubleChanged(QtProperty * , QString)));
+            SLOT(slotStringChanged(QtProperty * , QString)));
 
     connect(d_ptr->m_stringPropertyManager, SIGNAL(propertyDestroyed(QtProperty * )), this,
             SLOT(slotPropertyDestroyed(QtProperty * )));

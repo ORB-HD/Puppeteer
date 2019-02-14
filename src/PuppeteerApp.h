@@ -167,7 +167,7 @@ public slots:
 		void modelStateValueChanged (QtProperty *property, double value);
 		void modelStatePlotVisibleChanged (QtProperty *property, int state);
 		void modelStatePlotColorChanged (QtProperty *property, QColor color);
-		void valueChanged(QtProperty *property, double value);
+	    void valueChanged(QtProperty *property, QString value);
 		void valueChanged(QtProperty *property, QVector3D value);
 		void colorValueChanged(QtProperty *property, QColor value);
 		void captureFrameSliderChanged (int value);

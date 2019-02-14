@@ -566,12 +566,14 @@ void Model::adjustParentVisualsScale (int frame_id, const Vector3f &old_r, const
 	}
 }
 
-void Model::setBodyMass (int frame_id, double mass) {
-	(*luaTable)["frames"][frame_id]["body"]["mass"] = mass;
+void Model::setBodyMass (int frame_id, QString mass) {
+	(*luaTable)["frames"][frame_id]["body"]["mass"] = parseExpression(mass.toStdString(), expressionVariables);
 }
 
 LuaParameterExpression Model::getBodyMass (int frame_id) {
-	return (*luaTable)["frames"][frame_id]["body"]["mass"].get<LuaParameterExpression>();
+	LuaParameterExpression e = (*luaTable)["frames"][frame_id]["body"]["mass"].get<LuaParameterExpression>();
+	updateVariables(e);
+	return e;
 }
 
 void Model::setBodyCOM (int frame_id, const Vector3f &com) {
@@ -628,6 +630,16 @@ void Model::setJointOrientationLocalEulerYXZ (int frame_id, const Vector3f &yxz_
 	(*luaTable)["frames"][frame_id]["joint_frame"]["E"] = matrix;
 
 	updateFromLua();
+}
+
+void Model::updateVariables(const LuaParameterExpression &expr) {
+	if (expr.operation == "var") {
+		expressionVariables[expr.name] = expr.value;
+		return;
+	}
+    for (auto &par: expr.parameters) {
+        updateVariables(par);
+    }
 }
 
 void Model::clearModel() {

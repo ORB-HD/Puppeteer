@@ -35,7 +35,7 @@
 using namespace std;
 
 struct LuaParameterExpression {
-    string operation;
+    string operation = "const";
     vector<LuaParameterExpression> parameters;
     string name;
     double value;
@@ -54,6 +54,8 @@ LuaParameterExpression zeroExpression();
 LuaTable luaTableFromFileWithExpressions(const char *_filename);
 
 LuaTable luaTableFromExpressionWithExpressions(const char *lua_expr);
+
+LuaParameterExpression parseExpression(const std::string &lua_expr, const std::map<std::string, double> &known_vars);
 
 std::string serializeLuaTableWithExpressions(LuaTable table);
 

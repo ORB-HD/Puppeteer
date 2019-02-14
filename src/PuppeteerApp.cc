@@ -198,14 +198,15 @@ PuppeteerApp::PuppeteerApp(QWidget *parent)
 	// dataChart->pushData("Title", time, state, 1.0, ChartColor(255,0,0,255));
 
 	// signals
-	connect (doubleManager, SIGNAL (valueChanged(QtProperty *, double)), this, SLOT (valueChanged (QtProperty *, double)));
 	connect (doubleManagerModelStateEditor, SIGNAL (valueChanged(QtProperty *, double)), this, SLOT (modelStateValueChanged (QtProperty *, double)));
 	connect (enumManagerModelStateEditor, SIGNAL (valueChanged(QtProperty *, int)), this, SLOT (modelStatePlotVisibleChanged (QtProperty *, int)));
 	connect (colorManagerModelStateEditor, SIGNAL (valueChanged(QtProperty *, QColor)), this, SLOT (modelStatePlotColorChanged (QtProperty *, QColor)));
+	connect (stringManager, SIGNAL (valueChanged(QtProperty *, QString)), this, SLOT (valueChanged (QtProperty *, QString)));
 
 	connect (vector3DPropertyManager, SIGNAL (valueChanged(QtProperty *, QVector3D)), this, SLOT (valueChanged (QtProperty *, QVector3D)));
 	connect (vector3DYXZPropertyManager, SIGNAL (valueChanged(QtProperty *, QVector3D)), this, SLOT (valueChanged (QtProperty *, QVector3D)));
 	connect (colorManager, SIGNAL (valueChanged (QtProperty *, QColor)), this, SLOT (colorValueChanged (QtProperty *, QColor)));
+	// TODO: Expressionvector3d
 
 	// Loading and saving of model and animation data
 	connect (saveModelStateButton, SIGNAL (clicked()), this, SLOT (saveModelStateDialog()));
@@ -1257,7 +1258,7 @@ void PuppeteerApp::modelStatePlotColorChanged(QtProperty *property, QColor color
     updateGraph();
 }
 
-void PuppeteerApp::valueChanged (QtProperty *property, double value) {
+void PuppeteerApp::valueChanged (QtProperty *property, QString value) {
 	if (!propertyToName.contains(property))
 		return;
 

@@ -128,6 +128,7 @@ struct Model {
 	std::map<unsigned int, int> dofIndexToFrameId;
 	std::map<unsigned int, int> frameIdToRbdlId;
 	std::map<int, unsigned int> rbdlToFrameId;
+	std::map<std::string, double> expressionVariables;
 
 	bool isJointObject (int objectid) {
 		for (size_t i = 0; i < joints.size(); i++) {
@@ -227,7 +228,7 @@ struct Model {
 
 	void adjustParentVisualsScale (int frame_id, const Vector3f &old_r, const Vector3f &new_r);
 
-	void setBodyMass (int frame_id, double mass);
+	void setBodyMass (int frame_id, QString mass);
 	LuaParameterExpression getBodyMass (int frame_id);
 	void setBodyCOM (int frame_id, const Vector3f &com);
 	ExpressionVector3D getBodyCOM (int frame_id);
@@ -245,6 +246,7 @@ struct Model {
 	void clearModel();
 	void updateFromLua ();
 	void updateSceneObjects();
+	void updateVariables (const LuaParameterExpression &expr);
 
 	private:
 		Model(const Model &model) {}

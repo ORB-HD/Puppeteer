@@ -1,8 +1,8 @@
-/* 
+/*
  * Puppeteer - A Motion Capture Mapping Tool
  * Copyright (c) 2013-2016 Martin Felis <martin.felis@iwr.uni-heidelberg.de>.
  * All rights reserved.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
  * "Software"), to deal in the Software without restriction, including
@@ -10,17 +10,17 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
  * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE* 
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE*
  */
 
 
@@ -42,16 +42,27 @@ void bail(lua_State *L, const char *msg);
 
 std::string get_file_directory(const char *filename);
 
+
+struct LuaParseError : public exception {
+    const char * what () const throw () {
+        return "LuaParseError";
+    }
+};
+
+string format_double(double value) {
+    // Return value without trailing zeros, see https://stackoverflow.com/a/13709929
+    string result = to_string(value);
+    result.erase(result.find_last_not_of('0') + 1, std::string::npos);
+    result.erase(result.find_last_not_of('.') + 1, std::string::npos);
+    return result;
+}
+
 string LuaParameterExpression::serialize(int level) {
     string result;
     if (operation == "var") {
         return name;
     } else if (operation == "const") {
-        // Return value without trailing zeros, see https://stackoverflow.com/a/13709929
-        result = to_string(value);
-        result.erase(result.find_last_not_of('0') + 1, std::string::npos);
-        result.erase(result.find_last_not_of('.') + 1, std::string::npos);
-        return result;
+        return format_double(value);
     } else if (operation == "mul") {
         result = parameters[0].serialize(level + 1) + " * " + parameters[1].serialize(level + 1);
     } else if (operation == "add") {
@@ -229,6 +240,26 @@ LuaTable luaTableFromFileWithExpressions(const char *_filename) {
     return result;
 }
 
+LuaParameterExpression parseExpression(const std::string& lua_expr, const std::map<std::string, double> &known_vars) {
+    std::string body;
+    for (auto &entry : known_vars) {
+        body += entry.first + " = Variable(\"" + entry.first + "\", " + format_double(entry.second) + ")\n";
+    }
+    body += "return {value = " + lua_expr + "};";
+    cout << body << endl;
+    try {
+        LuaTable t = luaTableFromExpressionWithExpressions(body.c_str());
+        if (!t["value"].exists()) {
+            // TODO: Feedback error to user
+            return LuaParameterExpression();
+        }
+        return t["value"].get<LuaParameterExpression>();
+    } catch (LuaParseError& e) {
+        // TODO: Feedback error to user
+        return LuaParameterExpression();
+    }
+}
+
 LuaTable luaTableFromExpressionWithExpressions(const char *lua_expr) {
     LuaTable result;
 
@@ -239,11 +270,13 @@ LuaTable luaTableFromExpressionWithExpressions(const char *lua_expr) {
 
     luaL_dostring(result.luaStateRef->L, expressions_lua);
     if (luaL_loadstring(result.luaStateRef->L, lua_expr)) {
-        bail(result.luaStateRef->L, "Error compiling expression!");
+        std::cerr << "Error compiling expression!" << lua_tostring(result.luaStateRef->L, -1) << endl;
+        throw LuaParseError();
     }
 
     if (lua_pcall(result.luaStateRef->L, 0, LUA_MULTRET, 0)) {
-        bail(result.luaStateRef->L, "Error running expression!");
+        std::cerr << "Error running expression!" << lua_tostring(result.luaStateRef->L, -1) << endl;
+        throw LuaParseError();
     }
 
     if (lua_gettop(result.luaStateRef->L) != 0) {
