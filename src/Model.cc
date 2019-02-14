@@ -578,8 +578,11 @@ void Model::setBodyCOM (int frame_id, const Vector3f &com) {
 	(*luaTable)["frames"][frame_id]["body"]["com"] = com;
 }
 
-Vector3f Model::getBodyCOM (int frame_id) {
-	return (*luaTable)["frames"][frame_id]["body"]["com"].getDefault(Vector3f::Zero(3,3));
+ExpressionVector3D Model::getBodyCOM (int frame_id) {
+	LuaParameterExpression e1 = (*luaTable)["frames"][frame_id]["body"]["com"][1].get<LuaParameterExpression>();
+	LuaParameterExpression e2 = (*luaTable)["frames"][frame_id]["body"]["com"][2].get<LuaParameterExpression>();
+	LuaParameterExpression e3 = (*luaTable)["frames"][frame_id]["body"]["com"][3].get<LuaParameterExpression>();
+	return ExpressionVector3D(e1, e2, e3);
 }
 
 void Model::setBodyInertia (int frame_id, const Matrix33f &inertia) {

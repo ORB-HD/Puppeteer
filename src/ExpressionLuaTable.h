@@ -28,23 +28,74 @@
 
 #include <rbdl/rbdl_math.h>
 #include <rbdl/addons/luamodel/luatables.h>
+#include <QtGui/QVector3D>
+#include <vendor/QtPropertyBrowser/src/QtDoublePropertyManager>
+#include <QtCore/QMap>
 
 using namespace std;
 
 struct LuaParameterExpression {
-	string operation;
-	vector<LuaParameterExpression> parameters;
-	string name;
-	double value;
+    string operation;
+    vector<LuaParameterExpression> parameters;
+    string name;
+    double value;
 
-	string serialize(int level);
-	string serialize();
-	double evaluate();
+    string serialize(int level);
+
+    string serialize();
+
+    double evaluate();
+
+    bool operator==(const LuaParameterExpression &other) const;
 };
 
-LuaTable luaTableFromFileWithExpressions (const char* _filename);
+LuaParameterExpression zeroExpression();
+
+LuaTable luaTableFromFileWithExpressions(const char *_filename);
+
+LuaTable luaTableFromExpressionWithExpressions(const char *lua_expr);
+
 std::string serializeLuaTableWithExpressions(LuaTable table);
+
 std::string serializeOrderedLuaTableWithExpressions(LuaTable table);
+
+
+class ExpressionVector3D {
+public:
+    ExpressionVector3D() {
+        v.push_back(zeroExpression());
+        v.push_back(zeroExpression());
+        v.push_back(zeroExpression());
+    }
+
+    ExpressionVector3D(LuaParameterExpression xpos, LuaParameterExpression ypos, LuaParameterExpression zpos) {
+        v.push_back(xpos);
+        v.push_back(ypos);
+        v.push_back(zpos);
+    }
+
+    LuaParameterExpression x() const;
+
+    LuaParameterExpression y() const;
+
+    LuaParameterExpression z() const;
+
+    void setX(LuaParameterExpression x);
+
+    void setY(LuaParameterExpression y);
+
+    void setZ(LuaParameterExpression z);
+
+    LuaParameterExpression operator[](int i) const;
+
+    bool operator==(const ExpressionVector3D &other) const;
+
+    QVector3D toQVector3D();
+
+private:
+    vector<LuaParameterExpression> v;
+};
+
 
 /* MARKER_MODEL_LUA_EXPRESSIONS */
 #endif

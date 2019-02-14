@@ -399,27 +399,27 @@ LuaParameterExpression LuaTableNode::get<LuaParameterExpression>() {
 		LuaTable custom_table;
 		int type;
 		if (stackQueryValue()) {
-            type = lua_type(luaTable->L, -1);
-            if (type == LUA_TTABLE) {
-                stackRestore();
-                custom_table = stackQueryTable();
-                result.operation = custom_table["operation"].get<std::string>();
-                result.name = custom_table["name"].get<std::string>();
-                result.value = custom_table["value"].get<double>();
-                stackRestore();
+			type = lua_type(luaTable->L, -1);
+			if (type == LUA_TTABLE) {
+				stackRestore();
+				custom_table = stackQueryTable();
+				result.operation = custom_table["operation"].get<std::string>();
+				result.name = custom_table["name"].get<std::string>();
+				result.value = custom_table["value"].get<double>();
+				stackRestore();
 
-                if (custom_table["p1"].exists()) {
-                    result.parameters.push_back(custom_table["p1"].get<LuaParameterExpression>());
-                    if (custom_table["p2"].exists()) {
-                        result.parameters.push_back(custom_table["p2"].get<LuaParameterExpression>());
-                    }
-                }
-            } else {
-                result.value = 0;
-                result.operation = "const";
-                result.value = lua_tonumber (luaTable->L, -1);
-                stackRestore();
-            }
+				if (custom_table["p1"].exists()) {
+					result.parameters.push_back(custom_table["p1"].get<LuaParameterExpression>());
+					if (custom_table["p2"].exists()) {
+						result.parameters.push_back(custom_table["p2"].get<LuaParameterExpression>());
+					}
+				}
+			} else {
+				result.value = 0;
+				result.operation = "const";
+				result.value = lua_tonumber (luaTable->L, -1);
+				stackRestore();
+			}
 		}
 	} else {
 		result.value = 0;
@@ -429,6 +429,7 @@ LuaParameterExpression LuaTableNode::get<LuaParameterExpression>() {
 
 	return result;
 }
+
 
 /* MARKER_MODEL_LUA_TYPES */
 #endif

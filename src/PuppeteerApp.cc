@@ -147,6 +147,7 @@ PuppeteerApp::PuppeteerApp(QWidget *parent)
 	vector3DYXZPropertyManager = new QtVector3DPropertyManager (propertiesBrowser);	
 	vector3DYXZReadOnlyPropertyManager = new QtVector3DPropertyManager (propertiesBrowser);
 	vector3DYXZPropertyManager->setPropertyLabels ("Y", "X", "Z");
+	expressionVector3DPropertyManager = new ExpressionVector3DPropertyManager(propertiesBrowser);
 
 	vector3DPropertyManager->setDefaultDecimals (4);
 	vector3DYXZPropertyManager->setDefaultDecimals (4);
@@ -157,6 +158,7 @@ PuppeteerApp::PuppeteerApp(QWidget *parent)
 	colorEditFactory = new QtColorEditorFactory(propertiesBrowser);
 	vector3DEditorFactory = new QtVector3DEditorFactory(propertiesBrowser);
 	vector3DYXZEditorFactory = new QtVector3DEditorFactory(propertiesBrowser);
+	expressionVector3DEditorFactory = new ExpressionVector3DEditorFactory(propertiesBrowser);
 
 	// model state editor
 	colorManagerModelStateEditor = new QtColorPropertyManager(modelStateEditor);
@@ -180,6 +182,8 @@ PuppeteerApp::PuppeteerApp(QWidget *parent)
 	propertiesBrowser->setFactoryForManager (vector3DPropertyManager->subDoublePropertyManager(), doubleSpinBoxFactory);
 	propertiesBrowser->setFactoryForManager (vector3DYXZPropertyManager, vector3DEditorFactory);
 	propertiesBrowser->setFactoryForManager (vector3DYXZPropertyManager->subDoublePropertyManager(), doubleSpinBoxFactory);
+	propertiesBrowser->setFactoryForManager (expressionVector3DPropertyManager, expressionVector3DEditorFactory);
+	propertiesBrowser->setFactoryForManager (expressionVector3DPropertyManager->subStringPropertyManager(), lineEditFactory);
 
 	// setup chart container
 	
@@ -1040,9 +1044,9 @@ void PuppeteerApp::updatePropertiesForFrame (unsigned int frame_id) {
 	body_group->addSubProperty (mass_property);
 
 	// com
-	QtProperty *com_property = vector3DPropertyManager->addProperty("com");
-	Vector3f com = markerModel->getBodyCOM (frame_id);
-	vector3DPropertyManager->setValue (com_property, QVector3D (com[0], com[1], com[2]));
+	QtProperty *com_property = expressionVector3DPropertyManager->addProperty("com");
+	ExpressionVector3D com = markerModel->getBodyCOM (frame_id);
+	expressionVector3DPropertyManager->setValue (com_property, ExpressionVector3D (com[0], com[1], com[2]));
 	registerProperty (com_property, "body_com");
 	body_group->addSubProperty (com_property);
 

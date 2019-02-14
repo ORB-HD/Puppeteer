@@ -25,6 +25,7 @@
 
 
 #include "ExpressionLuaTable.h"
+#include <QMap>
 
 extern "C"
 {
@@ -119,6 +120,22 @@ double LuaParameterExpression::evaluate() {
     }
 }
 
+bool LuaParameterExpression::operator==(const LuaParameterExpression &other) const {
+    int i = 0;
+    for (auto &par: parameters) {
+        if (other.parameters.size() - 1 < i) {
+            return false;
+        }
+        if (!(other.parameters[i] == par)) {
+            return false;
+        }
+        i++;
+    }
+    return operation == other.operation
+           && value == other.value
+           && name == other.name;
+}
+
 std::string serializeLuaTableWithExpressions(LuaTable tbl) {
     tbl.pushRef();
 
@@ -210,4 +227,76 @@ LuaTable luaTableFromFileWithExpressions(const char *_filename) {
     result.luaRef = luaL_ref(result.luaStateRef->L, LUA_REGISTRYINDEX);
 
     return result;
+}
+
+LuaTable luaTableFromExpressionWithExpressions(const char *lua_expr) {
+    LuaTable result;
+
+    result.luaStateRef = new LuaStateRef();
+    result.luaStateRef->L = luaL_newstate();
+    result.luaStateRef->count = 1;
+    luaL_openlibs(result.luaStateRef->L);
+
+    luaL_dostring(result.luaStateRef->L, expressions_lua);
+    if (luaL_loadstring(result.luaStateRef->L, lua_expr)) {
+        bail(result.luaStateRef->L, "Error compiling expression!");
+    }
+
+    if (lua_pcall(result.luaStateRef->L, 0, LUA_MULTRET, 0)) {
+        bail(result.luaStateRef->L, "Error running expression!");
+    }
+
+    if (lua_gettop(result.luaStateRef->L) != 0) {
+        result.luaRef = luaL_ref(result.luaStateRef->L, LUA_REGISTRYINDEX);
+    } else {
+        result.referencesGlobal = true;
+    }
+
+    return result;
+}
+
+LuaParameterExpression zeroExpression() {
+    LuaParameterExpression l = LuaParameterExpression();
+    l.operation = "const";
+    l.value = 0;
+    return l;
+}
+
+LuaParameterExpression ExpressionVector3D::x() const {
+    return v[0];
+}
+
+LuaParameterExpression ExpressionVector3D::y() const {
+    return v[1];
+}
+
+LuaParameterExpression ExpressionVector3D::z() const {
+    return v[2];
+}
+
+void ExpressionVector3D::setX(LuaParameterExpression x) {
+    v[0] = x;
+}
+
+void ExpressionVector3D::setY(LuaParameterExpression y) {
+    v[0] = y;
+}
+
+void ExpressionVector3D::setZ(LuaParameterExpression z) {
+    v[0] = z;
+}
+
+LuaParameterExpression ExpressionVector3D::operator[](int i) const {
+    return v[i];
+}
+
+bool ExpressionVector3D::operator==(const ExpressionVector3D &other) const {
+    return x() == other.x()
+           && y() == other.y()
+           && z() == other.z();
+}
+
+QVector3D ExpressionVector3D::toQVector3D() {
+    return QVector3D(static_cast<float>(x().evaluate()), static_cast<float>(y().evaluate()),
+                     static_cast<float>(z().evaluate()));
 }

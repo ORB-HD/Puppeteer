@@ -230,7 +230,7 @@ struct Model {
 	void setBodyMass (int frame_id, double mass);
 	LuaParameterExpression getBodyMass (int frame_id);
 	void setBodyCOM (int frame_id, const Vector3f &com);
-	Vector3f getBodyCOM (int frame_id);
+	ExpressionVector3D getBodyCOM (int frame_id);
 	void setBodyInertia (int frame_id, const Matrix33f &inertia);
 	Matrix33f getBodyInertia (int frame_id);
 
