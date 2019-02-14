@@ -148,6 +148,7 @@ PuppeteerApp::PuppeteerApp(QWidget *parent)
 	vector3DYXZReadOnlyPropertyManager = new QtVector3DPropertyManager (propertiesBrowser);
 	vector3DYXZPropertyManager->setPropertyLabels ("Y", "X", "Z");
 	expressionVector3DPropertyManager = new ExpressionVector3DPropertyManager(propertiesBrowser);
+	expressionVector3DPropertyManager->model = markerModel;
 
 	vector3DPropertyManager->setDefaultDecimals (4);
 	vector3DYXZPropertyManager->setDefaultDecimals (4);
@@ -206,7 +207,7 @@ PuppeteerApp::PuppeteerApp(QWidget *parent)
 	connect (vector3DPropertyManager, SIGNAL (valueChanged(QtProperty *, QVector3D)), this, SLOT (valueChanged (QtProperty *, QVector3D)));
 	connect (vector3DYXZPropertyManager, SIGNAL (valueChanged(QtProperty *, QVector3D)), this, SLOT (valueChanged (QtProperty *, QVector3D)));
 	connect (colorManager, SIGNAL (valueChanged (QtProperty *, QColor)), this, SLOT (colorValueChanged (QtProperty *, QColor)));
-	// TODO: Expressionvector3d
+    connect (expressionVector3DPropertyManager, SIGNAL (valueChanged(QtProperty *, ExpressionVector3D)), this, SLOT (valueChanged (QtProperty *, ExpressionVector3D)));
 
 	// Loading and saving of model and animation data
 	connect (saveModelStateButton, SIGNAL (clicked()), this, SLOT (saveModelStateDialog()));
@@ -356,6 +357,7 @@ bool PuppeteerApp::loadModelFile (const char* filename) {
 	if (markerModel)
 		delete markerModel;
 	markerModel = new Model(scene);
+	expressionVector3DPropertyManager->model = markerModel;
 	assert (markerModel);
 
 	bool result = markerModel->loadFromFile (filename);
@@ -1270,7 +1272,20 @@ void PuppeteerApp::valueChanged (QtProperty *property, QString value) {
 		qDebug() << "Warning! Unhandled value change of property " << property_name;
 	}
 }
-	
+
+void PuppeteerApp::valueChanged (QtProperty *property, ExpressionVector3D value) {
+	if (!propertyToName.contains(property))
+		return;
+
+	QString property_name = propertyToName[property];
+
+	if (property_name.startsWith("body_com")) {
+		markerModel->setBodyCOM (activeModelFrame, ExpressionVector3D(value.x(), value.y(), value.z()));
+	} else {
+		qDebug() << "Warning! Unhandled value change of property " << property_name;
+	}
+}
+
 void PuppeteerApp::valueChanged (QtProperty *property, QVector3D value) {
 	if (!propertyToName.contains(property))
 		return;
@@ -1317,8 +1332,6 @@ void PuppeteerApp::valueChanged (QtProperty *property, QVector3D value) {
 			qDebug() << "Warning! Unhandled value change of property " << property_name;
 			return;
 		}
-	} else if (property_name.startsWith("body_com")) {
-		markerModel->setBodyCOM (activeModelFrame, Vector3f (value.x(), value.y(), value.z()));
 	} else if (property_name.startsWith("body_inertia_row")) {
 		Matrix33f inertia = markerModel->getBodyInertia (activeModelFrame);
 		if (property_name == "body_inertia_row1") {

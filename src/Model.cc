@@ -576,14 +576,19 @@ LuaParameterExpression Model::getBodyMass (int frame_id) {
 	return e;
 }
 
-void Model::setBodyCOM (int frame_id, const Vector3f &com) {
-	(*luaTable)["frames"][frame_id]["body"]["com"] = com;
+void Model::setBodyCOM (int frame_id, const ExpressionVector3D &com) {
+	(*luaTable)["frames"][frame_id]["body"]["com"][1] = com.x();
+	(*luaTable)["frames"][frame_id]["body"]["com"][2] = com.y();
+	(*luaTable)["frames"][frame_id]["body"]["com"][3] = com.z();
 }
 
 ExpressionVector3D Model::getBodyCOM (int frame_id) {
 	LuaParameterExpression e1 = (*luaTable)["frames"][frame_id]["body"]["com"][1].get<LuaParameterExpression>();
 	LuaParameterExpression e2 = (*luaTable)["frames"][frame_id]["body"]["com"][2].get<LuaParameterExpression>();
 	LuaParameterExpression e3 = (*luaTable)["frames"][frame_id]["body"]["com"][3].get<LuaParameterExpression>();
+	updateVariables(e1);
+	updateVariables(e2);
+	updateVariables(e3);
 	return ExpressionVector3D(e1, e2, e3);
 }
 

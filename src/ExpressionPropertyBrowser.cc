@@ -41,15 +41,15 @@
 void ExpressionVector3DPropertyManagerPrivate::slotStringChanged(QtProperty *property, QString value) {
     if (QtProperty *prop = m_xToProperty.value(property, 0)) {
         ExpressionVector3D v = m_values[prop];
-        // TODO: v.setX(value);
+        v.setX(parseExpression(value.toStdString(), q_ptr->model->expressionVariables));
         q_ptr->setValue(prop, v);
     } else if (QtProperty *prop = m_yToProperty.value(property, 0)) {
         ExpressionVector3D v = m_values[prop];
-        // TODO: v.setY(value);
+        v.setY(parseExpression(value.toStdString(), q_ptr->model->expressionVariables));
         q_ptr->setValue(prop, v);
     } else if (QtProperty *prop = m_zToProperty.value(property, 0)) {
         ExpressionVector3D v = m_values[prop];
-        // TODO: v.setZ(value);
+        v.setZ(parseExpression(value.toStdString(), q_ptr->model->expressionVariables));
         q_ptr->setValue(prop, v);
     }
 }

@@ -134,7 +134,7 @@ double LuaParameterExpression::evaluate() {
 bool LuaParameterExpression::operator==(const LuaParameterExpression &other) const {
     int i = 0;
     for (auto &par: parameters) {
-        if (other.parameters.size() - 1 < i) {
+        if (other.parameters.size() < i + 1) {
             return false;
         }
         if (!(other.parameters[i] == par)) {
@@ -246,16 +246,17 @@ LuaParameterExpression parseExpression(const std::string& lua_expr, const std::m
         body += entry.first + " = Variable(\"" + entry.first + "\", " + format_double(entry.second) + ")\n";
     }
     body += "return {value = " + lua_expr + "};";
-    cout << body << endl;
     try {
         LuaTable t = luaTableFromExpressionWithExpressions(body.c_str());
         if (!t["value"].exists()) {
             // TODO: Feedback error to user
+            cerr << body << endl;
             return LuaParameterExpression();
         }
         return t["value"].get<LuaParameterExpression>();
     } catch (LuaParseError& e) {
         // TODO: Feedback error to user
+        cerr << body << endl;
         return LuaParameterExpression();
     }
 }
@@ -312,11 +313,11 @@ void ExpressionVector3D::setX(LuaParameterExpression x) {
 }
 
 void ExpressionVector3D::setY(LuaParameterExpression y) {
-    v[0] = y;
+    v[1] = y;
 }
 
 void ExpressionVector3D::setZ(LuaParameterExpression z) {
-    v[0] = z;
+    v[2] = z;
 }
 
 LuaParameterExpression ExpressionVector3D::operator[](int i) const {

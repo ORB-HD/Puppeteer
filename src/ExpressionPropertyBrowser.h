@@ -29,6 +29,7 @@
 #include <QtGui/QVector3D>
 #include <vendor/QtPropertyBrowser/src/QtDoublePropertyManager>
 #include <QtCore/QMap>
+#include <Model.h>
 #include "ExpressionLuaTable.h"
 
 using namespace std;
@@ -46,6 +47,7 @@ public:
 
     ExpressionVector3D value(const QtProperty *property) const;
     void setPropertyLabels (const QString &label_x, const QString &label_y, const QString &label_z);
+    Model *model;
 public Q_SLOTS:
     void setValue(QtProperty *property, const ExpressionVector3D &val);
 Q_SIGNALS:
