@@ -326,9 +326,10 @@ void Model::updateSceneObjects() {
 
 	for (size_t i = 0; i < visuals.size(); i++) {
 		Transformation joint_transformation = visuals[i]->jointObject->transformation;
-		Vector3f mesh_center = (*luaTable)["frames"][visuals[i]->frameId]["visuals"][visuals[i]->visualIndex]["mesh_center"].getDefault<Vector3f>(Vector3f (0.f, 0.f, 0.f));
+		ExpressionVector3D mesh_center = (*luaTable)["frames"][visuals[i]->frameId]["visuals"][visuals[i]->visualIndex]["mesh_center"];
+		updateVariables(mesh_center);
 
-		joint_transformation.translation = joint_transformation.translation + joint_transformation.rotation.rotate (mesh_center);
+		joint_transformation.translation = joint_transformation.translation + joint_transformation.rotation.rotate (mesh_center.toVector3f());
 
 		visuals[i]->transformation.translation = joint_transformation.translation;
 		visuals[i]->transformation.rotation = joint_transformation.rotation * visuals[i]->data.orientation;
@@ -504,13 +505,17 @@ Vector3f Model::getVisualScale (int frame_id, int visuals_index) {
 	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["scale"].getDefault(Vector3f (1.f, 1.f, 1.f)) ;
 }
 
-void Model::setVisualCenter (int frame_id, int visuals_index, const Vector3f &center) {
-	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"] = center;
+void Model::setVisualCenter (int frame_id, int visuals_index, const ExpressionVector3D &center) {
+	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"][1] = center.x();
+	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"][2] = center.y();
+	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"][3] = center.z();
 	updateFromLua();
 }
 
-Vector3f Model::getVisualCenter(int frame_id, int visuals_index) {
-	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"] ;
+ExpressionVector3D Model::getVisualCenter(int frame_id, int visuals_index) {
+	ExpressionVector3D e = (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"];
+	updateVariables(e);
+	return e;
 }
 
 void Model::setVisualTranslate (int frame_id, int visuals_index, const Vector3f &translate) {
@@ -549,9 +554,9 @@ void Model::adjustParentVisualsScale (int frame_id, const Vector3f &old_r, const
 
 	for (size_t i = 0; i < (*luaTable)["frames"][parent_id]["visuals"].length(); i++) {
 		Vector3f dimensions = (*luaTable)["frames"][parent_id]["visuals"][i + 1]["dimensions"];
-		Vector3f mesh_center = (*luaTable)["frames"][parent_id]["visuals"][i + 1]["mesh_center"];
+		ExpressionVector3D mesh_center = (*luaTable)["frames"][parent_id]["visuals"][i + 1]["mesh_center"];
 
-		Vector3f center_to_r = old_r - mesh_center;
+		Vector3f center_to_r = old_r - mesh_center.toVector3f();
 		Vector3f delta_dim (
 				copysign(delta_r[0], center_to_r[0] * delta_r[0]),
 				copysign(delta_r[1], center_to_r[1] * delta_r[1]),
@@ -577,19 +582,13 @@ LuaParameterExpression Model::getBodyMass (int frame_id) {
 }
 
 void Model::setBodyCOM (int frame_id, const ExpressionVector3D &com) {
-	(*luaTable)["frames"][frame_id]["body"]["com"][1] = com.x();
-	(*luaTable)["frames"][frame_id]["body"]["com"][2] = com.y();
-	(*luaTable)["frames"][frame_id]["body"]["com"][3] = com.z();
+	(*luaTable)["frames"][frame_id]["body"]["com"] = com;
 }
 
 ExpressionVector3D Model::getBodyCOM (int frame_id) {
-	LuaParameterExpression e1 = (*luaTable)["frames"][frame_id]["body"]["com"][1].get<LuaParameterExpression>();
-	LuaParameterExpression e2 = (*luaTable)["frames"][frame_id]["body"]["com"][2].get<LuaParameterExpression>();
-	LuaParameterExpression e3 = (*luaTable)["frames"][frame_id]["body"]["com"][3].get<LuaParameterExpression>();
-	updateVariables(e1);
-	updateVariables(e2);
-	updateVariables(e3);
-	return ExpressionVector3D(e1, e2, e3);
+	ExpressionVector3D e = (*luaTable)["frames"][frame_id]["body"]["com"].get<ExpressionVector3D>();
+	updateVariables(e);
+	return e;
 }
 
 void Model::setBodyInertia (int frame_id, const Matrix33f &inertia) {
@@ -642,9 +641,15 @@ void Model::updateVariables(const LuaParameterExpression &expr) {
 		expressionVariables[expr.name] = expr.value;
 		return;
 	}
-    for (auto &par: expr.parameters) {
-        updateVariables(par);
-    }
+	for (auto &par: expr.parameters) {
+		updateVariables(par);
+	}
+}
+
+void Model::updateVariables(const ExpressionVector3D &expr) {
+	updateVariables(expr.x());
+	updateVariables(expr.y());
+	updateVariables(expr.z());
 }
 
 void Model::clearModel() {
@@ -809,7 +814,7 @@ void Model::updateFromLua() {
 					object_transformation.scaling = scale;
 				}
 
-				object_transformation.translation = object_transformation.translation + object_transformation.rotation.rotate (visual_data.mesh_center);
+				object_transformation.translation = object_transformation.translation + object_transformation.rotation.rotate (visual_data.mesh_center.toVector3f());
 				
 				visual_scene_object->transformation = object_transformation;
 			}

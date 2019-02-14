@@ -386,39 +386,6 @@ LuaTableNode::getDefault<RigidBodyDynamics::Body>(const RigidBodyDynamics::Body 
 }
 
 template<>
-VisualsData LuaTableNode::getDefault<VisualsData>(const VisualsData &default_value) {
-    VisualsData result = default_value;
-
-    if (stackQueryValue()) {
-        LuaTable visuals_table = LuaTable::fromLuaState(luaTable->L);
-
-        result.scale = visuals_table["scale"].getDefault(Vector3f(1.f, 1.f, 1.f));
-        result.dimensions = visuals_table["dimensions"].getDefault(Vector3f(0.f, 0.f, 0.f));
-        if (visuals_table["color"].length() == 4)
-            result.color = visuals_table["color"].getDefault(Vector4f(-1.f, -1.f, -1.f, 1.f));
-        else {
-            Vector3f vec3_color = visuals_table["color"].getDefault(Vector3f(-1.f, -1.f, -1.f));
-            result.color = Vector4f(vec3_color[0], vec3_color[1], vec3_color[2], 1.f);
-        }
-        result.mesh_center = visuals_table["mesh_center"].getDefault(Vector3f(-1.f, -1.f, -1.f));
-        result.translate = visuals_table["translate"].getDefault(Vector3f(-1.f, -1.f, -1.f));
-
-        if (visuals_table["rotate"].exists()) {
-            Vector3f axis = visuals_table["rotate"]["axis"];
-            double angle = visuals_table["rotate"]["angle"];
-
-            result.orientation = SimpleMath::GL::Quaternion::fromGLRotate(angle, axis[0], axis[1], axis[2]);
-        }
-
-        result.src = visuals_table["src"].getDefault<std::string>("");
-    }
-
-    stackRestore();
-
-    return result;
-}
-
-template<>
 LuaParameterExpression LuaTableNode::getDefault<LuaParameterExpression>(const LuaParameterExpression &def) {
     LuaParameterExpression result = LuaParameterExpression();
 
@@ -473,6 +440,69 @@ void LuaTableNode::set<LuaParameterExpression>(const LuaParameterExpression &val
     stackRestore();
 }
 
+template<>
+ExpressionVector3D LuaTableNode::getDefault<ExpressionVector3D>(const ExpressionVector3D &default_value) {
+    ExpressionVector3D result = default_value;
+
+    if (stackQueryValue()) {
+        LuaTable vector_table = LuaTable::fromLuaState(luaTable->L);
+
+        if (vector_table.length() != 3) {
+            std::cerr << "LuaModel Error at " << keyStackToString() << " : invalid 3d vector!" << std::endl;
+            abort();
+        }
+
+        result.setX(vector_table[1].get<LuaParameterExpression>());
+        result.setY(vector_table[2].get<LuaParameterExpression>());
+        result.setZ(vector_table[3].get<LuaParameterExpression>());
+    }
+
+    stackRestore();
+
+    return result;
+}
+
+template<>
+void LuaTableNode::set<ExpressionVector3D>(const ExpressionVector3D &value) {
+    LuaTable custom_table = stackCreateLuaTable();
+    custom_table[1] = value.x();
+    custom_table[2] = value.y();
+    custom_table[3] = value.z();
+    stackRestore();
+}
+
+template<>
+VisualsData LuaTableNode::getDefault<VisualsData>(const VisualsData &default_value) {
+    VisualsData result = default_value;
+
+    if (stackQueryValue()) {
+        LuaTable visuals_table = LuaTable::fromLuaState(luaTable->L);
+
+        result.scale = visuals_table["scale"].getDefault(Vector3f(1.f, 1.f, 1.f));
+        result.dimensions = visuals_table["dimensions"].getDefault(Vector3f(0.f, 0.f, 0.f));
+        if (visuals_table["color"].length() == 4)
+            result.color = visuals_table["color"].getDefault(Vector4f(-1.f, -1.f, -1.f, 1.f));
+        else {
+            Vector3f vec3_color = visuals_table["color"].getDefault(Vector3f(-1.f, -1.f, -1.f));
+            result.color = Vector4f(vec3_color[0], vec3_color[1], vec3_color[2], 1.f);
+        }
+        result.mesh_center = visuals_table["mesh_center"].getDefault(ExpressionVector3D());
+        result.translate = visuals_table["translate"].getDefault(Vector3f(-1.f, -1.f, -1.f));
+
+        if (visuals_table["rotate"].exists()) {
+            Vector3f axis = visuals_table["rotate"]["axis"];
+            double angle = visuals_table["rotate"]["angle"];
+
+            result.orientation = SimpleMath::GL::Quaternion::fromGLRotate(angle, axis[0], axis[1], axis[2]);
+        }
+
+        result.src = visuals_table["src"].getDefault<std::string>("");
+    }
+
+    stackRestore();
+
+    return result;
+}
 
 /* MARKER_MODEL_LUA_TYPES */
 #endif

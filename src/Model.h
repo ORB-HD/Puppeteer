@@ -51,7 +51,7 @@ struct VisualsData {
 		scale (-1.f, -1.f, -1.f),
 		dimensions (1.f, 1.f, 1.f),
 		color (1.f, 1.f, 1.f, 1.f),
-		mesh_center (-1.f, -1.f, -1.f),
+		mesh_center (LuaParameterExpression(), LuaParameterExpression(), LuaParameterExpression()),
 		translate (-1.f, -1.f, -1.f),
 		orientation (),
 		src ("")
@@ -60,7 +60,7 @@ struct VisualsData {
 	Vector3f scale;
 	Vector3f dimensions;
 	Vector4f color;
-	Vector3f mesh_center;
+	ExpressionVector3D mesh_center;
 	Vector3f translate;
 	SimpleMath::GL::Quaternion orientation;
 	std::string src;
@@ -218,8 +218,8 @@ struct Model {
 	Vector3f getVisualScale (int frame_id, int visuals_index);
 	void setVisualTranslate (int frame_id, int visuals_index, const Vector3f &translate);
 	Vector3f getVisualTranslate(int frame_id, int visuals_index);
-	void setVisualCenter (int frame_id, int visuals_index, const Vector3f &center);
-	Vector3f getVisualCenter(int frame_id, int visuals_index);
+	void setVisualCenter (int frame_id, int visuals_index, const ExpressionVector3D &center);
+	ExpressionVector3D getVisualCenter(int frame_id, int visuals_index);
 	void setVisualColor (int frame_id, int visuals_index, const Vector3f &color);
 	Vector3f getVisualColor(int frame_id, int visuals_index);
 
@@ -247,6 +247,7 @@ struct Model {
 	void updateFromLua ();
 	void updateSceneObjects();
 	void updateVariables (const LuaParameterExpression &expr);
+	void updateVariables (const ExpressionVector3D &expr);
 
 	private:
 		Model(const Model &model) {}

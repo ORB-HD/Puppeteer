@@ -31,14 +31,15 @@
 #include <QtGui/QVector3D>
 #include <vendor/QtPropertyBrowser/src/QtDoublePropertyManager>
 #include <QtCore/QMap>
+#include <SimpleMath/SimpleMath.h>
 
 using namespace std;
 
 struct LuaParameterExpression {
     string operation = "const";
     vector<LuaParameterExpression> parameters;
-    string name;
-    double value;
+    string name = "";
+    double value = 0;
 
     string serialize(int level);
 
@@ -47,6 +48,8 @@ struct LuaParameterExpression {
     double evaluate();
 
     bool operator==(const LuaParameterExpression &other) const;
+
+    LuaParameterExpression operator+(const float &other) const;
 };
 
 LuaParameterExpression zeroExpression();
@@ -64,10 +67,7 @@ std::string serializeOrderedLuaTableWithExpressions(LuaTable table);
 
 class ExpressionVector3D {
 public:
-    ExpressionVector3D() {
-        v.push_back(zeroExpression());
-        v.push_back(zeroExpression());
-        v.push_back(zeroExpression());
+    ExpressionVector3D() : ExpressionVector3D(zeroExpression(), zeroExpression(), zeroExpression()) {
     }
 
     ExpressionVector3D(LuaParameterExpression xpos, LuaParameterExpression ypos, LuaParameterExpression zpos) {
@@ -92,7 +92,11 @@ public:
 
     bool operator==(const ExpressionVector3D &other) const;
 
+    ExpressionVector3D operator+(const Vector3f &other) const;
+
     QVector3D toQVector3D();
+
+    Vector3f toVector3f();
 
 private:
     vector<LuaParameterExpression> v;

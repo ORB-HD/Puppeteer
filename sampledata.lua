@@ -10,5 +10,8 @@ model = heiman:create_model()
 model.frames[#model.frames].body.com = {
 	1, 2 * height, 3
 }
+model.frames[#model.frames].visuals[1].mesh_center = {
+	0, height, 0.09143245
+}
 
 return model

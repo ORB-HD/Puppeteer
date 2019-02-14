@@ -26,6 +26,7 @@
 
 #include "ExpressionLuaTable.h"
 #include <QMap>
+#include "SimpleMath/SimpleMath.h"
 
 extern "C"
 {
@@ -145,6 +146,17 @@ bool LuaParameterExpression::operator==(const LuaParameterExpression &other) con
     return operation == other.operation
            && value == other.value
            && name == other.name;
+}
+
+LuaParameterExpression LuaParameterExpression::operator+(const float &other) const {
+    LuaParameterExpression wrap = LuaParameterExpression();
+    wrap.operation = "add";
+    wrap.parameters.push_back(*this);
+    LuaParameterExpression c = LuaParameterExpression();
+    c.operation = "const";
+    c.value = other;
+    wrap.parameters.push_back(c);
+    return wrap;
 }
 
 std::string serializeLuaTableWithExpressions(LuaTable tbl) {
@@ -293,6 +305,7 @@ LuaParameterExpression zeroExpression() {
     LuaParameterExpression l = LuaParameterExpression();
     l.operation = "const";
     l.value = 0;
+    l.name = "";
     return l;
 }
 
@@ -328,6 +341,15 @@ bool ExpressionVector3D::operator==(const ExpressionVector3D &other) const {
     return x() == other.x()
            && y() == other.y()
            && z() == other.z();
+}
+
+ExpressionVector3D ExpressionVector3D::operator+(const Vector3f &other) const {
+    return ExpressionVector3D(x() + other[0], y() + other[1], z() + other[2]);
+}
+
+Vector3f ExpressionVector3D::toVector3f() {
+    return Vector3f(static_cast<float>(x().evaluate()), static_cast<float>(y().evaluate()),
+                    static_cast<float>(z().evaluate()));
 }
 
 QVector3D ExpressionVector3D::toQVector3D() {

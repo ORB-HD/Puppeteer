@@ -998,9 +998,9 @@ void PuppeteerApp::updatePropertiesForFrame (unsigned int frame_id) {
 		QtProperty *visual_property = groupManager->addProperty (visual_name.c_str());
 
 		// center
-		QtProperty *center_property = vector3DPropertyManager->addProperty("center");
-		Vector3f center = markerModel->getVisualCenter (frame_id, visual_id);
-		vector3DPropertyManager->setValue (center_property, QVector3D (center[0], center[1], center[2]));
+		QtProperty *center_property = expressionVector3DPropertyManager->addProperty("center");
+		ExpressionVector3D center = markerModel->getVisualCenter (frame_id, visual_id);
+		expressionVector3DPropertyManager->setValue (center_property, ExpressionVector3D (center[0], center[1], center[2]));
 		registerProperty (center_property, (std::string ("visuals_") + visual_name + "_center").c_str());
 		visual_property->addSubProperty (center_property);
 
@@ -1281,6 +1281,23 @@ void PuppeteerApp::valueChanged (QtProperty *property, ExpressionVector3D value)
 
 	if (property_name.startsWith("body_com")) {
 		markerModel->setBodyCOM (activeModelFrame, ExpressionVector3D(value.x(), value.y(), value.z()));
+	} else if (property_name.startsWith("visuals_")) {
+		QRegExp rx("visuals_(\\d+)_(\\w+)");
+		if (!rx.exactMatch (property_name)) {
+			qDebug() << "Warning! Unhandled value change of property " << property_name;
+			return;
+		}
+
+		int visual_id = rx.cap(1).toInt();
+		QString visual_property = rx.cap(2);
+
+		if (visual_property == "center") {
+			ExpressionVector3D center (value.x(), value.y(), value.z());
+			markerModel->setVisualCenter (activeModelFrame, visual_id, center);
+		} else {
+			qDebug() << "Warning! Unhandled value change of property " << property_name;
+			return;
+		}
 	} else {
 		qDebug() << "Warning! Unhandled value change of property " << property_name;
 	}
@@ -1309,7 +1326,7 @@ void PuppeteerApp::valueChanged (QtProperty *property, QVector3D value) {
 	} else if (property_name.startsWith("marker_coordinates")) {
 		Vector3f coord (value.x(), value.y(), value.z());
 		markerModel->setFrameMarkerCoord (activeModelFrame, property->propertyName().toLatin1(), coord);
-	}	else if (property_name.startsWith("visuals_")) {
+	} else if (property_name.startsWith("visuals_")) {
 		QRegExp rx("visuals_(\\d+)_(\\w+)");
 		if (!rx.exactMatch (property_name)) {
 			qDebug() << "Warning! Unhandled value change of property " << property_name;
@@ -1325,9 +1342,6 @@ void PuppeteerApp::valueChanged (QtProperty *property, QVector3D value) {
 		} else if (visual_property == "scale") {
 			Vector3f scale (value.x(), value.y(), value.z());
 			markerModel->setVisualScale (activeModelFrame, visual_id, scale);
-		} else if (visual_property == "center") {
-			Vector3f center (value.x(), value.y(), value.z());
-			markerModel->setVisualCenter (activeModelFrame, visual_id, center);
 		} else {
 			qDebug() << "Warning! Unhandled value change of property " << property_name;
 			return;
