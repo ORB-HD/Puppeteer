@@ -207,9 +207,9 @@ struct Model {
 	std::string getParentName (int frame_id);
 	Vector3f getFrameLocationGlobal (int frame_id);
 	Vector3f getFrameOrientationGlobalEulerYXZ (int frame_id);
-	Vector3f getJointLocationLocal (int frame_id);
+	ExpressionVector3D getJointLocationLocal (int frame_id);
 	Vector3f getJointOrientationLocalEulerYXZ (int frame_id);
-	void setJointLocationLocal (int frame_id, const Vector3f &location);
+	void setJointLocationLocal (int frame_id, const ExpressionVector3D &location);
 	void setJointOrientationLocalEulerYXZ (int frame_id, const Vector3f &yxz_euler);
 
 	void setVisualDimensions (int frame_id, int visuals_index, const ExpressionVector3D &dimensions);

@@ -362,12 +362,16 @@ ExpressionVector3D ExpressionVector3D::operator-(const Vector3f &other) const {
     return ExpressionVector3D(x() - other[0], y() - other[1], z() - other[2]);
 }
 
-Vector3f ExpressionVector3D::toVector3f() {
+RigidBodyDynamics::Math::Vector3d ExpressionVector3D::toVector3d() const {
+    return RigidBodyDynamics::Math::Vector3d(x().evaluate(), y().evaluate(), z().evaluate());
+}
+
+Vector3f ExpressionVector3D::toVector3f() const {
     return Vector3f(static_cast<float>(x().evaluate()), static_cast<float>(y().evaluate()),
                     static_cast<float>(z().evaluate()));
 }
 
-QVector3D ExpressionVector3D::toQVector3D() {
+QVector3D ExpressionVector3D::toQVector3D() const {
     return QVector3D(static_cast<float>(x().evaluate()), static_cast<float>(y().evaluate()),
                      static_cast<float>(z().evaluate()));
 }

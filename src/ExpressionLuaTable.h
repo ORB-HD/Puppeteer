@@ -107,9 +107,11 @@ public:
 
     ExpressionVector3D operator-(const Vector3f &other) const;
 
-    QVector3D toQVector3D();
+    QVector3D toQVector3D() const;
 
-    Vector3f toVector3f();
+    Vector3f toVector3f() const;
+
+    RigidBodyDynamics::Math::Vector3d toVector3d() const;
 
 private:
     vector<LuaParameterExpression> v;

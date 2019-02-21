@@ -476,8 +476,8 @@ Vector3f Model::getFrameOrientationGlobalEulerYXZ (int frame_id) {
 	return SimpleMath::GL::Quaternion::fromMatrix(orientation).toEulerYXZ();
 }
 
-Vector3f Model::getJointLocationLocal (int frame_id) {
-	return (*luaTable)["frames"][frame_id]["joint_frame"]["r"].getDefault<Vector3f>(Vector3f::Zero());
+ExpressionVector3D Model::getJointLocationLocal (int frame_id) {
+	return (*luaTable)["frames"][frame_id]["joint_frame"]["r"].getDefault<ExpressionVector3D>(ExpressionVector3D());
 }
 
 Vector3f Model::getJointOrientationLocalEulerYXZ (int frame_id) {
@@ -493,7 +493,7 @@ void Model::setVisualDimensions (int frame_id, int visuals_index, const Expressi
 }
 
 ExpressionVector3D Model::getVisualDimensions (int frame_id, int visuals_index) {
-	ExpressionVector3D e = (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["dimensions"] ;
+	ExpressionVector3D e = (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["dimensions"];
 	updateVariables(e);
 	return e;
 }
@@ -601,11 +601,11 @@ ExpressionMatrix33 Model::getBodyInertia (int frame_id) {
 	return (*luaTable)["frames"][frame_id]["body"]["inertia"].getDefault(ExpressionMatrix33());
 }
 
-void Model::setJointLocationLocal (int frame_id, const Vector3f &location) {
-	Vector3f old_location = (*luaTable)["frames"][frame_id]["joint_frame"]["r"];
+void Model::setJointLocationLocal (int frame_id, const ExpressionVector3D &location) {
+	ExpressionVector3D old_location = (*luaTable)["frames"][frame_id]["joint_frame"]["r"];
 	(*luaTable)["frames"][frame_id]["joint_frame"]["r"] = location;
 
-	adjustParentVisualsScale (frame_id, old_location, location);
+	adjustParentVisualsScale (frame_id, old_location.toVector3f(), location.toVector3f());
 	
 	updateFromLua();
 }

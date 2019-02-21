@@ -241,25 +241,6 @@ LuaTableNode::getDefault<RigidBodyDynamics::Math::Matrix3d>(const RigidBodyDynam
 }
 
 template<>
-RigidBodyDynamics::Math::SpatialTransform LuaTableNode::getDefault<RigidBodyDynamics::Math::SpatialTransform>(
-        const RigidBodyDynamics::Math::SpatialTransform &default_value) {
-    RigidBodyDynamics::Math::SpatialTransform result = default_value;
-
-    if (stackQueryValue()) {
-        LuaTable vector_table = LuaTable::fromLuaState(luaTable->L);
-
-        result.r = vector_table["r"].getDefault<RigidBodyDynamics::Math::Vector3d>(
-                RigidBodyDynamics::Math::Vector3d::Zero(3));
-        result.E = vector_table["E"].getDefault<RigidBodyDynamics::Math::Matrix3d>(
-                RigidBodyDynamics::Math::Matrix3d::Identity(3, 3));
-    }
-
-    stackRestore();
-
-    return result;
-}
-
-template<>
 RigidBodyDynamics::Joint
 LuaTableNode::getDefault<RigidBodyDynamics::Joint>(const RigidBodyDynamics::Joint &default_value) {
     using namespace RigidBodyDynamics;
@@ -535,6 +516,24 @@ VisualsData LuaTableNode::getDefault<VisualsData>(const VisualsData &default_val
         }
 
         result.src = visuals_table["src"].getDefault<std::string>("");
+    }
+
+    stackRestore();
+
+    return result;
+}
+
+template<>
+RigidBodyDynamics::Math::SpatialTransform LuaTableNode::getDefault<RigidBodyDynamics::Math::SpatialTransform>(
+        const RigidBodyDynamics::Math::SpatialTransform &default_value) {
+    RigidBodyDynamics::Math::SpatialTransform result = default_value;
+
+    if (stackQueryValue()) {
+        LuaTable vector_table = LuaTable::fromLuaState(luaTable->L);
+
+        result.r = vector_table["r"].getDefault<ExpressionVector3D>(ExpressionVector3D()).toVector3d();
+        result.E = vector_table["E"].getDefault<RigidBodyDynamics::Math::Matrix3d>(
+                RigidBodyDynamics::Math::Matrix3d::Identity(3, 3));
     }
 
     stackRestore();

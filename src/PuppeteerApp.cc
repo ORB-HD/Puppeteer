@@ -966,10 +966,9 @@ void PuppeteerApp::updatePropertiesForFrame (unsigned int frame_id) {
 	QtProperty *joint_group = groupManager->addProperty("Joint Frame");
 
 	// joint local position
-	QtProperty *joint_location_local_property = vector3DPropertyManager->addProperty("Position");
-	Vector3f joint_location_local = markerModel->getJointLocationLocal (frame_id);
-	vector3DPropertyManager->setValue (joint_location_local_property, QVector3D (joint_location_local[0], joint_location_local[1], joint_location_local[2]));
-	vector3DPropertyManager->setSingleStep (joint_location_local_property, 0.01);
+	QtProperty *joint_location_local_property = expressionVector3DPropertyManager->addProperty("Position");
+	ExpressionVector3D joint_location_local = markerModel->getJointLocationLocal (frame_id);
+	expressionVector3DPropertyManager->setValue (joint_location_local_property, joint_location_local);
 	registerProperty (joint_location_local_property, "joint_location_local");
 	joint_group->addSubProperty (joint_location_local_property);
 
@@ -1278,6 +1277,8 @@ void PuppeteerApp::valueChanged (QtProperty *property, ExpressionVector3D value)
 
 	if (property_name.startsWith("body_com")) {
 		markerModel->setBodyCOM (activeModelFrame, ExpressionVector3D(value.x(), value.y(), value.z()));
+	} else if (property_name.startsWith ("joint_location_local")) {
+		markerModel->setJointLocationLocal (activeModelFrame, value);
 	} else if (property_name.startsWith("visuals_")) {
 		QRegExp rx("visuals_(\\d+)_(\\w+)");
 		if (!rx.exactMatch (property_name)) {
@@ -1331,9 +1332,6 @@ void PuppeteerApp::valueChanged (QtProperty *property, QVector3D value) {
 		Vector3f yxz_rotation (value.x(), value.y(), value.z());
 		Quaternion rotation = Quaternion::fromEulerYXZ (yxz_rotation);
 		scene->getObject<SceneObject>(activeObject)->transformation.rotation = rotation;
-	} else if (property_name.startsWith ("joint_location_local")) {
-		Vector3f position (value.x(), value.y(), value.z());
-		markerModel->setJointLocationLocal (activeModelFrame, position);
 	} else if (property_name.startsWith ("joint_orientation_local")) {
 		Vector3f yxz_rotation (value.x(), value.y(), value.z());
 		Quaternion rotation = Quaternion::fromEulerYXZ (yxz_rotation);
