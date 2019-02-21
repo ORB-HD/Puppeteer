@@ -203,6 +203,7 @@ PuppeteerApp::PuppeteerApp(QWidget *parent)
 	connect (enumManagerModelStateEditor, SIGNAL (valueChanged(QtProperty *, int)), this, SLOT (modelStatePlotVisibleChanged (QtProperty *, int)));
 	connect (colorManagerModelStateEditor, SIGNAL (valueChanged(QtProperty *, QColor)), this, SLOT (modelStatePlotColorChanged (QtProperty *, QColor)));
 	connect (stringManager, SIGNAL (valueChanged(QtProperty *, QString)), this, SLOT (valueChanged (QtProperty *, QString)));
+	connect (doubleManager, SIGNAL (valueChanged(QtProperty *, double)), this, SLOT (valueChanged (QtProperty *, doubles)));
 
 	connect (vector3DPropertyManager, SIGNAL (valueChanged(QtProperty *, QVector3D)), this, SLOT (valueChanged (QtProperty *, QVector3D)));
 	connect (vector3DYXZPropertyManager, SIGNAL (valueChanged(QtProperty *, QVector3D)), this, SLOT (valueChanged (QtProperty *, QVector3D)));
@@ -1154,16 +1155,24 @@ void PuppeteerApp::advanceFrame() {
 }
 
 void PuppeteerApp::updatePropertiesEditor (int object_id) {
+	// update properties browser
+	propertiesBrowser->clear();
+	QtBrowserItem* item = NULL;
+
 	if (object_id < 0) {
-		propertiesBrowser->clear();
+
+		// If no object is selected, we display the variables that can be used in expressions and their current values
+		for (auto var : markerModel->expressionVariables) {
+			QtProperty *prop = doubleManager->addProperty(QString(var.first.c_str()));
+			registerProperty(prop, QString(("var_" + var.first).c_str()));
+			doubleManager->setValue(prop, var.second);
+			propertiesBrowser->addProperty(prop);
+		}
+
 		return;
 	}
 
 	updateExpandStateRecursive(propertiesBrowser->topLevelItems(), "");
-
-	// update properties browser
-	propertiesBrowser->clear();
-	QtBrowserItem* item = NULL;
 
 	// global position
 	QtProperty *position_property = vector3DPropertyManager->addProperty("Position");
@@ -1233,7 +1242,7 @@ void PuppeteerApp::modelStateValueChanged (QtProperty *property, double value) {
 
 	unsigned int state_index = propertyToStateIndex[property];
 
-	markerModel->setModelStateValue (state_index, value);	
+	markerModel->setModelStateValue (state_index, value);
 	updatePropertiesEditor (activeObject);
 }
 
@@ -1263,7 +1272,33 @@ void PuppeteerApp::valueChanged (QtProperty *property, QString value) {
 	QString property_name = propertyToName[property];
 
 	if (property_name.startsWith ("body_mass")) {
-		markerModel->setBodyMass (activeModelFrame, value);
+		markerModel->setBodyMass(activeModelFrame, value);
+	} else {
+		qDebug() << "Warning! Unhandled value change of property " << property_name;
+	}
+}
+
+void PuppeteerApp::valueChanged (QtProperty *property, double value) {
+	if (!propertyToName.contains(property))
+		return;
+
+	QString property_name = propertyToName[property];
+
+	if (property_name.startsWith("var_")) {
+		QRegExp rx("var_(\\w+)");
+		if (!rx.exactMatch (property_name)) {
+			qDebug() << "Warning! Unhandled value change of property " << property_name;
+			return;
+		}
+		QString var_name = rx.cap(1);
+		map<string, double>::iterator it = markerModel->expressionVariables.find(var_name.toStdString());
+		if (it == markerModel->expressionVariables.end()) {
+            qDebug() << "Warning! Unhandled value change of property " << property_name;
+            return;
+		}
+		// TODO: This should move into a Model method
+		markerModel->expressionVariables[var_name.toStdString()] = value;
+		markerModel->updateFromLua();
 	} else {
 		qDebug() << "Warning! Unhandled value change of property " << property_name;
 	}
