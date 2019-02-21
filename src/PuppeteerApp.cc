@@ -1006,15 +1006,15 @@ void PuppeteerApp::updatePropertiesForFrame (unsigned int frame_id) {
 
 		// dimensions or scale
 		if (markerModel->visualUsesDimensions (frame_id, visual_id)) {
-			QtProperty *dimensions_property = vector3DPropertyManager->addProperty("dimensions");
-			Vector3f dimensions = markerModel->getVisualDimensions (frame_id, visual_id);
-			vector3DPropertyManager->setValue (dimensions_property, QVector3D (dimensions[0], dimensions[1], dimensions[2]));
+			QtProperty *dimensions_property = expressionVector3DPropertyManager->addProperty("dimensions");
+			ExpressionVector3D dimensions = markerModel->getVisualDimensions (frame_id, visual_id);
+			expressionVector3DPropertyManager->setValue (dimensions_property, dimensions);
 			registerProperty (dimensions_property, (std::string ("visuals_") + visual_name + "_dimensions").c_str());
 			visual_property->addSubProperty (dimensions_property);
 		} else {
-			QtProperty *scale_property = vector3DPropertyManager->addProperty("scale");
-			Vector3f scale = markerModel->getVisualScale (frame_id, visual_id);
-			vector3DPropertyManager->setValue (scale_property, QVector3D (scale[0], scale[1], scale[2]));
+			QtProperty *scale_property = expressionVector3DPropertyManager->addProperty("scale");
+			ExpressionVector3D scale = markerModel->getVisualScale (frame_id, visual_id);
+            expressionVector3DPropertyManager->setValue (scale_property, scale);
 			registerProperty (scale_property, (std::string ("visuals_") + visual_name + "_scale").c_str());
 			visual_property->addSubProperty (scale_property);
 		}
@@ -1056,26 +1056,23 @@ void PuppeteerApp::updatePropertiesForFrame (unsigned int frame_id) {
 	// inertia
 	QtProperty *inertia_group = groupManager->addProperty ("Inertia");
 
-	Matrix33f inertia = markerModel->getBodyInertia (frame_id);
+	ExpressionMatrix33 inertia = markerModel->getBodyInertia (frame_id);
 
 	// inertia row1
-	QtProperty *inertia_row1_property = vector3DPropertyManager->addProperty("1");
-	Vector3f inertia_row1 = inertia.block(0,0,3,1);
-	vector3DPropertyManager->setValue (inertia_row1_property, QVector3D (inertia_row1[0], inertia_row1[1], inertia_row1[2]));
+	QtProperty *inertia_row1_property = expressionVector3DPropertyManager->addProperty("1");
+	expressionVector3DPropertyManager->setValue (inertia_row1_property, inertia.row1());
 	registerProperty (inertia_row1_property, "body_inertia_row1");
 	inertia_group->addSubProperty (inertia_row1_property);
 
 	// inertia row2
-	QtProperty *inertia_row2_property = vector3DPropertyManager->addProperty("2");
-	Vector3f inertia_row2 = inertia.block(0,1,3,1);
-	vector3DPropertyManager->setValue (inertia_row2_property, QVector3D (inertia_row2[0], inertia_row2[1], inertia_row2[2]));
+	QtProperty *inertia_row2_property = expressionVector3DPropertyManager->addProperty("2");
+	expressionVector3DPropertyManager->setValue (inertia_row2_property, inertia.row2());
 	registerProperty (inertia_row2_property, "body_inertia_row2");
 	inertia_group->addSubProperty (inertia_row2_property);
 
 	// inertia row3
-	QtProperty *inertia_row3_property = vector3DPropertyManager->addProperty("3");
-	Vector3f inertia_row3 = inertia.block(0,2,3,1);
-	vector3DPropertyManager->setValue (inertia_row3_property, QVector3D (inertia_row3[0], inertia_row3[1], inertia_row3[2]));
+	QtProperty *inertia_row3_property = expressionVector3DPropertyManager->addProperty("3");
+	expressionVector3DPropertyManager->setValue (inertia_row3_property, inertia.row3());
 	registerProperty (inertia_row3_property, "body_inertia_row3");
 	inertia_group->addSubProperty (inertia_row3_property);
 
@@ -1292,12 +1289,30 @@ void PuppeteerApp::valueChanged (QtProperty *property, ExpressionVector3D value)
 		QString visual_property = rx.cap(2);
 
 		if (visual_property == "center") {
-			ExpressionVector3D center (value.x(), value.y(), value.z());
-			markerModel->setVisualCenter (activeModelFrame, visual_id, center);
+			ExpressionVector3D center(value.x(), value.y(), value.z());
+			markerModel->setVisualCenter(activeModelFrame, visual_id, center);
+		} else if (visual_property == "dimensions") {
+			ExpressionVector3D dimensions(value.x(), value.y(), value.z());
+			markerModel->setVisualDimensions(activeModelFrame, visual_id, dimensions);
+		} else if (visual_property == "scale") {
+			ExpressionVector3D scale(value.x(), value.y(), value.z());
+			markerModel->setVisualScale(activeModelFrame, visual_id, scale);
 		} else {
 			qDebug() << "Warning! Unhandled value change of property " << property_name;
 			return;
 		}
+	} else if (property_name.startsWith("body_inertia_row")) {
+		ExpressionMatrix33 inertia = markerModel->getBodyInertia (activeModelFrame);
+		if (property_name == "body_inertia_row1") {
+			inertia.setRow1(value);
+		} else if (property_name == "body_inertia_row2") {
+			inertia.setRow2(value);
+		} else if (property_name == "body_inertia_row3") {
+			inertia.setRow3(value);
+		} else {
+			qDebug() << "Warning! Unhandled value change of property " << property_name;
+		}
+		markerModel->setBodyInertia (activeModelFrame, inertia);
 	} else {
 		qDebug() << "Warning! Unhandled value change of property " << property_name;
 	}
@@ -1326,38 +1341,6 @@ void PuppeteerApp::valueChanged (QtProperty *property, QVector3D value) {
 	} else if (property_name.startsWith("marker_coordinates")) {
 		Vector3f coord (value.x(), value.y(), value.z());
 		markerModel->setFrameMarkerCoord (activeModelFrame, property->propertyName().toLatin1(), coord);
-	} else if (property_name.startsWith("visuals_")) {
-		QRegExp rx("visuals_(\\d+)_(\\w+)");
-		if (!rx.exactMatch (property_name)) {
-			qDebug() << "Warning! Unhandled value change of property " << property_name;
-			return;
-		}
-
-		int visual_id = rx.cap(1).toInt();
-		QString visual_property = rx.cap(2);
-
-		if (visual_property == "dimensions") {
-			Vector3f dimensions (value.x(), value.y(), value.z());
-			markerModel->setVisualDimensions (activeModelFrame, visual_id, dimensions);
-		} else if (visual_property == "scale") {
-			Vector3f scale (value.x(), value.y(), value.z());
-			markerModel->setVisualScale (activeModelFrame, visual_id, scale);
-		} else {
-			qDebug() << "Warning! Unhandled value change of property " << property_name;
-			return;
-		}
-	} else if (property_name.startsWith("body_inertia_row")) {
-		Matrix33f inertia = markerModel->getBodyInertia (activeModelFrame);
-		if (property_name == "body_inertia_row1") {
-			inertia.block<1,3>(0,0) = Vector3f (value.x(), value.y(), value.z()).transpose();
-		} else if (property_name == "body_inertia_row2") {
-			inertia.block<1,3>(1,0) = Vector3f (value.x(), value.y(), value.z()).transpose();
-		} else if (property_name == "body_inertia_row3") {
-			inertia.block<1,3>(2,0) = Vector3f (value.x(), value.y(), value.z()).transpose();
-		} else {
-			qDebug() << "Warning! Unhandled value change of property " << property_name;
-		}
-		markerModel->setBodyInertia (activeModelFrame, inertia);
 	} else if (property_name.startsWith ("contact_point_position_global")) {
 		ContactPointObject* contact_point_object = dynamic_cast<ContactPointObject*>(scene->getObject<SceneObject>(activeObject));
 

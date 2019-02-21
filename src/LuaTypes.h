@@ -463,11 +463,49 @@ ExpressionVector3D LuaTableNode::getDefault<ExpressionVector3D>(const Expression
 }
 
 template<>
+ExpressionMatrix33 LuaTableNode::getDefault<ExpressionMatrix33>(const ExpressionMatrix33 &default_value) {
+    ExpressionMatrix33 result = default_value;
+
+    if (stackQueryValue()) {
+        LuaTable vector_table = LuaTable::fromLuaState(luaTable->L);
+
+        if (vector_table.length() != 3) {
+            std::cerr << "LuaModel Error at " << keyStackToString() << " : invalid 3d vector!" << std::endl;
+            abort();
+        }
+
+        result.setRow1(vector_table[1].get<ExpressionVector3D>());
+        result.setRow2(vector_table[2].get<ExpressionVector3D>());
+        result.setRow3(vector_table[3].get<ExpressionVector3D>());
+    }
+
+    stackRestore();
+
+    return result;
+}
+
+template<>
 void LuaTableNode::set<ExpressionVector3D>(const ExpressionVector3D &value) {
     LuaTable custom_table = stackCreateLuaTable();
     custom_table[1] = value.x();
     custom_table[2] = value.y();
     custom_table[3] = value.z();
+    stackRestore();
+}
+
+template<>
+void LuaTableNode::set<ExpressionMatrix33>(const ExpressionMatrix33 &value) {
+    LuaTable custom_table = stackCreateLuaTable();
+
+    custom_table[1][1] = value.row1().x();
+    custom_table[1][2] = value.row1().y();
+    custom_table[1][3] = value.row1().z();
+    custom_table[2][1] = value.row2().x();
+    custom_table[2][2] = value.row2().y();
+    custom_table[2][3] = value.row2().z();
+    custom_table[3][1] = value.row3().x();
+    custom_table[3][2] = value.row3().y();
+    custom_table[3][3] = value.row3().z();
     stackRestore();
 }
 
@@ -478,8 +516,8 @@ VisualsData LuaTableNode::getDefault<VisualsData>(const VisualsData &default_val
     if (stackQueryValue()) {
         LuaTable visuals_table = LuaTable::fromLuaState(luaTable->L);
 
-        result.scale = visuals_table["scale"].getDefault(Vector3f(1.f, 1.f, 1.f));
-        result.dimensions = visuals_table["dimensions"].getDefault(Vector3f(0.f, 0.f, 0.f));
+        result.scale = visuals_table["scale"].getDefault(ExpressionVector3D(1., 1., 1.));
+        result.dimensions = visuals_table["dimensions"].getDefault(ExpressionVector3D(0., 0., 0.));
         if (visuals_table["color"].length() == 4)
             result.color = visuals_table["color"].getDefault(Vector4f(-1.f, -1.f, -1.f, 1.f));
         else {
@@ -487,7 +525,7 @@ VisualsData LuaTableNode::getDefault<VisualsData>(const VisualsData &default_val
             result.color = Vector4f(vec3_color[0], vec3_color[1], vec3_color[2], 1.f);
         }
         result.mesh_center = visuals_table["mesh_center"].getDefault(ExpressionVector3D());
-        result.translate = visuals_table["translate"].getDefault(Vector3f(-1.f, -1.f, -1.f));
+        result.translate = visuals_table["translate"].getDefault(ExpressionVector3D(-1.f, -1.f, -1.f));
 
         if (visuals_table["rotate"].exists()) {
             Vector3f axis = visuals_table["rotate"]["axis"];

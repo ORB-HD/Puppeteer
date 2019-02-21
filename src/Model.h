@@ -57,11 +57,11 @@ struct VisualsData {
 		src ("")
 	{}
 
-	Vector3f scale;
-	Vector3f dimensions;
+	ExpressionVector3D scale;
+    ExpressionVector3D dimensions;
 	Vector4f color;
 	ExpressionVector3D mesh_center;
-	Vector3f translate;
+    ExpressionVector3D translate;
 	SimpleMath::GL::Quaternion orientation;
 	std::string src;
 };
@@ -212,12 +212,12 @@ struct Model {
 	void setJointLocationLocal (int frame_id, const Vector3f &location);
 	void setJointOrientationLocalEulerYXZ (int frame_id, const Vector3f &yxz_euler);
 
-	void setVisualDimensions (int frame_id, int visuals_index, const Vector3f &dimensions);
-	Vector3f getVisualDimensions (int frame_id, int visuals_index);
-	void setVisualScale (int frame_id, int visuals_index, const Vector3f &scale);
-	Vector3f getVisualScale (int frame_id, int visuals_index);
-	void setVisualTranslate (int frame_id, int visuals_index, const Vector3f &translate);
-	Vector3f getVisualTranslate(int frame_id, int visuals_index);
+	void setVisualDimensions (int frame_id, int visuals_index, const ExpressionVector3D &dimensions);
+	ExpressionVector3D getVisualDimensions (int frame_id, int visuals_index);
+	void setVisualScale (int frame_id, int visuals_index, const ExpressionVector3D &scale);
+	ExpressionVector3D getVisualScale (int frame_id, int visuals_index);
+	void setVisualTranslate (int frame_id, int visuals_index, const ExpressionVector3D &translate);
+	ExpressionVector3D getVisualTranslate(int frame_id, int visuals_index);
 	void setVisualCenter (int frame_id, int visuals_index, const ExpressionVector3D &center);
 	ExpressionVector3D getVisualCenter(int frame_id, int visuals_index);
 	void setVisualColor (int frame_id, int visuals_index, const Vector3f &color);
@@ -232,8 +232,8 @@ struct Model {
 	LuaParameterExpression getBodyMass (int frame_id);
 	void setBodyCOM (int frame_id, const ExpressionVector3D &com);
 	ExpressionVector3D getBodyCOM (int frame_id);
-	void setBodyInertia (int frame_id, const Matrix33f &inertia);
-	Matrix33f getBodyInertia (int frame_id);
+	void setBodyInertia (int frame_id, const ExpressionMatrix33 &inertia);
+	ExpressionMatrix33 getBodyInertia (int frame_id);
 
 	void setContactPointGlobal (int contact_point_index, const Vector3f &global_coords);
 	void setContactPointLocal (int contact_point_index, const Vector3f &local_coords);

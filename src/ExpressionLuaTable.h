@@ -50,6 +50,8 @@ struct LuaParameterExpression {
     bool operator==(const LuaParameterExpression &other) const;
 
     LuaParameterExpression operator+(const float &other) const;
+
+    LuaParameterExpression operator-(const float &other) const;
 };
 
 LuaParameterExpression zeroExpression();
@@ -68,6 +70,15 @@ std::string serializeOrderedLuaTableWithExpressions(LuaTable table);
 class ExpressionVector3D {
 public:
     ExpressionVector3D() : ExpressionVector3D(zeroExpression(), zeroExpression(), zeroExpression()) {
+    }
+
+    ExpressionVector3D(double xpos, double ypos, double zpos) {
+        v.push_back(zeroExpression());
+        v.push_back(zeroExpression());
+        v.push_back(zeroExpression());
+        v[0].value = xpos;
+        v[1].value = ypos;
+        v[2].value = zpos;
     }
 
     ExpressionVector3D(LuaParameterExpression xpos, LuaParameterExpression ypos, LuaParameterExpression zpos) {
@@ -94,12 +105,48 @@ public:
 
     ExpressionVector3D operator+(const Vector3f &other) const;
 
+    ExpressionVector3D operator-(const Vector3f &other) const;
+
     QVector3D toQVector3D();
 
     Vector3f toVector3f();
 
 private:
     vector<LuaParameterExpression> v;
+};
+
+
+class ExpressionMatrix33 {
+public:
+    ExpressionMatrix33() : ExpressionMatrix33(ExpressionVector3D(), ExpressionVector3D(), ExpressionVector3D()) {
+    }
+
+    ExpressionMatrix33(ExpressionVector3D row1, ExpressionVector3D row2, ExpressionVector3D row3) {
+        v.push_back(row1);
+        v.push_back(row2);
+        v.push_back(row3);
+    }
+
+    ExpressionVector3D row1() const;
+
+    ExpressionVector3D row2() const;
+
+    ExpressionVector3D row3() const;
+
+    void setRow1(ExpressionVector3D x);
+
+    void setRow2(ExpressionVector3D y);
+
+    void setRow3(ExpressionVector3D z);
+
+    ExpressionVector3D operator[](int i) const;
+
+    bool operator==(const ExpressionMatrix33 &other) const;
+
+    Matrix33f toMatrix33f();
+
+private:
+    vector<ExpressionVector3D> v;
 };
 
 

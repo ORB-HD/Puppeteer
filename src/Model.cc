@@ -486,29 +486,31 @@ Vector3f Model::getJointOrientationLocalEulerYXZ (int frame_id) {
 	return SimpleMath::GL::Quaternion::fromMatrix(orientation).toEulerYXZ();
 }
 
-void Model::setVisualDimensions (int frame_id, int visuals_index, const Vector3f &dimensions) {
+void Model::setVisualDimensions (int frame_id, int visuals_index, const ExpressionVector3D &dimensions) {
 	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["dimensions"] = dimensions;
 
 	updateFromLua();
 }
 
-Vector3f Model::getVisualDimensions (int frame_id, int visuals_index) {
-	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["dimensions"] ;
+ExpressionVector3D Model::getVisualDimensions (int frame_id, int visuals_index) {
+	ExpressionVector3D e = (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["dimensions"] ;
+	updateVariables(e);
+	return e;
 }
 
-void Model::setVisualScale (int frame_id, int visuals_index, const Vector3f &scale) {
+void Model::setVisualScale (int frame_id, int visuals_index, const ExpressionVector3D &scale) {
 	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["scale"] = scale;
 	updateFromLua();
 }
 
-Vector3f Model::getVisualScale (int frame_id, int visuals_index) {
-	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["scale"].getDefault(Vector3f (1.f, 1.f, 1.f)) ;
+ExpressionVector3D Model::getVisualScale (int frame_id, int visuals_index) {
+	ExpressionVector3D e = (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["scale"].getDefault(ExpressionVector3D (1., 1., 1.));
+	updateVariables(e);
+	return e;
 }
 
 void Model::setVisualCenter (int frame_id, int visuals_index, const ExpressionVector3D &center) {
-	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"][1] = center.x();
-	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"][2] = center.y();
-	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"][3] = center.z();
+	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"] = center;
 	updateFromLua();
 }
 
@@ -518,12 +520,12 @@ ExpressionVector3D Model::getVisualCenter(int frame_id, int visuals_index) {
 	return e;
 }
 
-void Model::setVisualTranslate (int frame_id, int visuals_index, const Vector3f &translate) {
+void Model::setVisualTranslate (int frame_id, int visuals_index, const ExpressionVector3D &translate) {
 	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_translate"] = translate;
 	updateFromLua();
 }
 
-Vector3f Model::getVisualTranslate(int frame_id, int visuals_index) {
+ExpressionVector3D Model::getVisualTranslate(int frame_id, int visuals_index) {
 	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_translate"] ;
 }
 
@@ -553,7 +555,7 @@ void Model::adjustParentVisualsScale (int frame_id, const Vector3f &old_r, const
 		return;
 
 	for (size_t i = 0; i < (*luaTable)["frames"][parent_id]["visuals"].length(); i++) {
-		Vector3f dimensions = (*luaTable)["frames"][parent_id]["visuals"][i + 1]["dimensions"];
+		ExpressionVector3D dimensions = (*luaTable)["frames"][parent_id]["visuals"][i + 1]["dimensions"];
 		ExpressionVector3D mesh_center = (*luaTable)["frames"][parent_id]["visuals"][i + 1]["mesh_center"];
 
 		Vector3f center_to_r = old_r - mesh_center.toVector3f();
@@ -591,12 +593,12 @@ ExpressionVector3D Model::getBodyCOM (int frame_id) {
 	return e;
 }
 
-void Model::setBodyInertia (int frame_id, const Matrix33f &inertia) {
+void Model::setBodyInertia (int frame_id, const ExpressionMatrix33 &inertia) {
 	(*luaTable)["frames"][frame_id]["body"]["inertia"] = inertia;
 }
 
-Matrix33f Model::getBodyInertia (int frame_id) {
-	return (*luaTable)["frames"][frame_id]["body"]["inertia"].getDefault(Matrix33f::Zero(3,3));
+ExpressionMatrix33 Model::getBodyInertia (int frame_id) {
+	return (*luaTable)["frames"][frame_id]["body"]["inertia"].getDefault(ExpressionMatrix33());
 }
 
 void Model::setJointLocationLocal (int frame_id, const Vector3f &location) {
@@ -722,8 +724,8 @@ void Model::updateFromLua() {
 			for (size_t vi = 1; vi <= (*luaTable)["frames"][i]["visuals"].length(); vi++) {
 				VisualsData visual_data = (*luaTable)["frames"][i]["visuals"][vi];
 
-				assert ((visual_data.scale + Vector3f (-1.f, -1.f, -1.f)).squaredNorm() < 1.0e-5 && "visuals.scale not (yet) supported!");
-				assert ((visual_data.translate - Vector3f (-1.f, -1.f, -1.f)).squaredNorm() < 1.0e-5 && "visuals.translate not (yet) supported!");
+				assert ((visual_data.scale + Vector3f (-1.f, -1.f, -1.f)).toVector3f().squaredNorm() < 1.0e-5 && "visuals.scale not (yet) supported!");
+				assert ((visual_data.translate - Vector3f (-1.f, -1.f, -1.f)).toVector3f().squaredNorm() < 1.0e-5 && "visuals.translate not (yet) supported!");
 
 				// setup of the scene object
 				VisualsObject* visual_scene_object = getVisualsObject (i, vi);
@@ -801,15 +803,15 @@ void Model::updateFromLua() {
 				visual_scene_object->mesh = mesh;
 
 				Transformation object_transformation = joint_scene_object->transformation;
-				if ( visual_data.dimensions.norm() < 1.0e-8) {
-					object_transformation.scaling = visual_data.scale;
+				if ( visual_data.dimensions.toVector3f().norm() < 1.0e-8) {
+					object_transformation.scaling = visual_data.scale.toVector3f();
 				} else {
 					// setup of the transformation
 					Vector3f bbox_size (mesh.bbox_max - mesh.bbox_min);
 					Vector3f scale (
-							fabs(visual_data.dimensions[0]) / bbox_size[0],
-							fabs(visual_data.dimensions[1]) / bbox_size[1],
-							fabs(visual_data.dimensions[2]) / bbox_size[2]
+							abs(visual_data.dimensions[0].evaluate()) / bbox_size[0],
+							abs(visual_data.dimensions[1].evaluate()) / bbox_size[1],
+							abs(visual_data.dimensions[2].evaluate()) / bbox_size[2]
 							);
 					object_transformation.scaling = scale;
 				}

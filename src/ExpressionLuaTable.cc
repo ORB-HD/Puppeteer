@@ -45,7 +45,7 @@ std::string get_file_directory(const char *filename);
 
 
 struct LuaParseError : public exception {
-    const char * what () const throw () {
+    const char *what() const throw() {
         return "LuaParseError";
     }
 };
@@ -146,6 +146,17 @@ bool LuaParameterExpression::operator==(const LuaParameterExpression &other) con
     return operation == other.operation
            && value == other.value
            && name == other.name;
+}
+
+LuaParameterExpression LuaParameterExpression::operator-(const float &other) const {
+    LuaParameterExpression wrap = LuaParameterExpression();
+    wrap.operation = "sub";
+    wrap.parameters.push_back(*this);
+    LuaParameterExpression c = LuaParameterExpression();
+    c.operation = "const";
+    c.value = other;
+    wrap.parameters.push_back(c);
+    return wrap;
 }
 
 LuaParameterExpression LuaParameterExpression::operator+(const float &other) const {
@@ -252,7 +263,7 @@ LuaTable luaTableFromFileWithExpressions(const char *_filename) {
     return result;
 }
 
-LuaParameterExpression parseExpression(const std::string& lua_expr, const std::map<std::string, double> &known_vars) {
+LuaParameterExpression parseExpression(const std::string &lua_expr, const std::map<std::string, double> &known_vars) {
     std::string body;
     for (auto &entry : known_vars) {
         body += entry.first + " = Variable(\"" + entry.first + "\", " + format_double(entry.second) + ")\n";
@@ -266,7 +277,7 @@ LuaParameterExpression parseExpression(const std::string& lua_expr, const std::m
             return LuaParameterExpression();
         }
         return t["value"].get<LuaParameterExpression>();
-    } catch (LuaParseError& e) {
+    } catch (LuaParseError &e) {
         // TODO: Feedback error to user
         cerr << body << endl;
         return LuaParameterExpression();
@@ -347,6 +358,10 @@ ExpressionVector3D ExpressionVector3D::operator+(const Vector3f &other) const {
     return ExpressionVector3D(x() + other[0], y() + other[1], z() + other[2]);
 }
 
+ExpressionVector3D ExpressionVector3D::operator-(const Vector3f &other) const {
+    return ExpressionVector3D(x() - other[0], y() - other[1], z() - other[2]);
+}
+
 Vector3f ExpressionVector3D::toVector3f() {
     return Vector3f(static_cast<float>(x().evaluate()), static_cast<float>(y().evaluate()),
                     static_cast<float>(z().evaluate()));
@@ -355,4 +370,52 @@ Vector3f ExpressionVector3D::toVector3f() {
 QVector3D ExpressionVector3D::toQVector3D() {
     return QVector3D(static_cast<float>(x().evaluate()), static_cast<float>(y().evaluate()),
                      static_cast<float>(z().evaluate()));
+}
+
+ExpressionVector3D ExpressionMatrix33::row1() const {
+    return v[0];
+}
+
+ExpressionVector3D ExpressionMatrix33::row2() const {
+    return v[1];
+}
+
+ExpressionVector3D ExpressionMatrix33::row3() const {
+    return v[2];
+}
+
+void ExpressionMatrix33::setRow1(ExpressionVector3D x) {
+    v[0] = x;
+}
+
+void ExpressionMatrix33::setRow2(ExpressionVector3D y) {
+    v[1] = y;
+}
+
+void ExpressionMatrix33::setRow3(ExpressionVector3D z) {
+    v[2] = z;
+}
+
+ExpressionVector3D ExpressionMatrix33::operator[](int i) const {
+    return v[i];
+}
+
+bool ExpressionMatrix33::operator==(const ExpressionMatrix33 &other) const {
+    return row1() == other.row1()
+           && row2() == other.row2()
+           && row3() == other.row3();
+}
+
+Matrix33f ExpressionMatrix33::toMatrix33f() {
+    return Matrix33f(
+            static_cast<float>(row1().x().evaluate()),
+            static_cast<float>(row1().y().evaluate()),
+            static_cast<float>(row1().z().evaluate()),
+            static_cast<float>(row2().x().evaluate()),
+            static_cast<float>(row2().y().evaluate()),
+            static_cast<float>(row2().z().evaluate()),
+            static_cast<float>(row3().x().evaluate()),
+            static_cast<float>(row3().y().evaluate()),
+            static_cast<float>(row3().z().evaluate())
+    );
 }
