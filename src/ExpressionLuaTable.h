@@ -66,6 +66,7 @@ std::string serializeLuaTableWithExpressions(LuaTable table);
 
 std::string serializeOrderedLuaTableWithExpressions(LuaTable table);
 
+void updateVariables(LuaTable &table, std::map<std::string, double> &vars);
 
 class ExpressionVector3D {
 public:

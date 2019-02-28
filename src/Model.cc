@@ -327,7 +327,6 @@ void Model::updateSceneObjects() {
 	for (size_t i = 0; i < visuals.size(); i++) {
 		Transformation joint_transformation = visuals[i]->jointObject->transformation;
 		ExpressionVector3D mesh_center = (*luaTable)["frames"][visuals[i]->frameId]["visuals"][visuals[i]->visualIndex]["mesh_center"];
-		updateVariables(mesh_center);
 
 		joint_transformation.translation = joint_transformation.translation + joint_transformation.rotation.rotate (mesh_center.toVector3f());
 
@@ -493,9 +492,7 @@ void Model::setVisualDimensions (int frame_id, int visuals_index, const Expressi
 }
 
 ExpressionVector3D Model::getVisualDimensions (int frame_id, int visuals_index) {
-	ExpressionVector3D e = (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["dimensions"];
-	updateVariables(e);
-	return e;
+	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["dimensions"];
 }
 
 void Model::setVisualScale (int frame_id, int visuals_index, const ExpressionVector3D &scale) {
@@ -504,9 +501,7 @@ void Model::setVisualScale (int frame_id, int visuals_index, const ExpressionVec
 }
 
 ExpressionVector3D Model::getVisualScale (int frame_id, int visuals_index) {
-	ExpressionVector3D e = (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["scale"].getDefault(ExpressionVector3D (1., 1., 1.));
-	updateVariables(e);
-	return e;
+	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["scale"].getDefault(ExpressionVector3D (1., 1., 1.));
 }
 
 void Model::setVisualCenter (int frame_id, int visuals_index, const ExpressionVector3D &center) {
@@ -515,9 +510,7 @@ void Model::setVisualCenter (int frame_id, int visuals_index, const ExpressionVe
 }
 
 ExpressionVector3D Model::getVisualCenter(int frame_id, int visuals_index) {
-	ExpressionVector3D e = (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"];
-	updateVariables(e);
-	return e;
+	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"];
 }
 
 void Model::setVisualTranslate (int frame_id, int visuals_index, const ExpressionVector3D &translate) {
@@ -579,7 +572,6 @@ void Model::setBodyMass (int frame_id, QString mass) {
 
 LuaParameterExpression Model::getBodyMass (int frame_id) {
 	LuaParameterExpression e = (*luaTable)["frames"][frame_id]["body"]["mass"].get<LuaParameterExpression>();
-	updateVariables(e);
 	return e;
 }
 
@@ -588,9 +580,7 @@ void Model::setBodyCOM (int frame_id, const ExpressionVector3D &com) {
 }
 
 ExpressionVector3D Model::getBodyCOM (int frame_id) {
-	ExpressionVector3D e = (*luaTable)["frames"][frame_id]["body"]["com"].get<ExpressionVector3D>();
-	updateVariables(e);
-	return e;
+	return (*luaTable)["frames"][frame_id]["body"]["com"].get<ExpressionVector3D>();
 }
 
 void Model::setBodyInertia (int frame_id, const ExpressionMatrix33 &inertia) {
@@ -638,22 +628,6 @@ void Model::setJointOrientationLocalEulerYXZ (int frame_id, const Vector3f &yxz_
 	updateFromLua();
 }
 
-void Model::updateVariables(const LuaParameterExpression &expr) {
-	if (expr.operation == "var") {
-		expressionVariables[expr.name] = expr.value;
-		return;
-	}
-	for (auto &par: expr.parameters) {
-		updateVariables(par);
-	}
-}
-
-void Model::updateVariables(const ExpressionVector3D &expr) {
-	updateVariables(expr.x());
-	updateVariables(expr.y());
-	updateVariables(expr.z());
-}
-
 void Model::clearModel() {
 	delete rbdlModel;
 	rbdlModel = new RigidBodyDynamics::Model();
@@ -670,6 +644,8 @@ void Model::updateFromLua() {
 	if ((*luaTable)["gravity"].exists()) {
 		rbdlModel->gravity = (*luaTable)["gravity"].get<RigidBodyDynamics::Math::Vector3d>();
 	}
+
+	updateVariables(*luaTable, expressionVariables);
 
 	int frame_count = (*luaTable)["frames"].length();
 

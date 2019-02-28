@@ -50,7 +50,7 @@ function Expression (operation, p1, p2, name, value)
     setmetatable(tbl, mt)
     return tbl
 end
-local _expressions_variable_index = {}
+_expressions_variable_index = {}
 function Variable (name, value)
     if _expressions_variable_index[name] then
         error("You cannot re-define the variable '" .. name .. "'!")

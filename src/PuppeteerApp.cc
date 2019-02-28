@@ -203,7 +203,7 @@ PuppeteerApp::PuppeteerApp(QWidget *parent)
 	connect (enumManagerModelStateEditor, SIGNAL (valueChanged(QtProperty *, int)), this, SLOT (modelStatePlotVisibleChanged (QtProperty *, int)));
 	connect (colorManagerModelStateEditor, SIGNAL (valueChanged(QtProperty *, QColor)), this, SLOT (modelStatePlotColorChanged (QtProperty *, QColor)));
 	connect (stringManager, SIGNAL (valueChanged(QtProperty *, QString)), this, SLOT (valueChanged (QtProperty *, QString)));
-	connect (doubleManager, SIGNAL (valueChanged(QtProperty *, double)), this, SLOT (valueChanged (QtProperty *, doubles)));
+	connect (doubleManager, SIGNAL (valueChanged(QtProperty *, double)), this, SLOT (valueChanged (QtProperty *, double)));
 
 	connect (vector3DPropertyManager, SIGNAL (valueChanged(QtProperty *, QVector3D)), this, SLOT (valueChanged (QtProperty *, QVector3D)));
 	connect (vector3DYXZPropertyManager, SIGNAL (valueChanged(QtProperty *, QVector3D)), this, SLOT (valueChanged (QtProperty *, QVector3D)));
@@ -365,6 +365,7 @@ bool PuppeteerApp::loadModelFile (const char* filename) {
 	markerModel->fileName = filename;
 	buildModelStateEditor();
 	updateModelStateEditor();
+    updatePropertiesEditor (-1);
 
 	emit model_loaded();
 

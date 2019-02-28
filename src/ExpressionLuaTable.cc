@@ -50,6 +50,33 @@ struct LuaParseError : public exception {
     }
 };
 
+void updateVariables(LuaTable &table, std::map<std::string, double> &vars) {
+    vars.clear();
+    table.pushRef();
+    int stackTop = lua_gettop(table.L);
+
+    lua_getglobal (table.L, "_expressions_variable_index");
+    std::string key;
+    double value;
+
+    if (lua_isnil(table.L, -1)) {
+        return;
+    }
+
+    lua_pushnil(table.L);  // put "first" key on stack, table is now on -2
+    while (lua_next(table.L, -2) != 0) { // pops the key from -1, pushes key to -2 and value to -1, table is now on -3
+        key = lua_tostring(table.L, -2);
+
+        lua_pushstring(table.L, "value"); // pushes a key to -1, table is now on -4, sub-table is now -2
+        lua_gettable(table.L, -2); // pops the key at -1 and replaces it with the value of the variable
+        value = lua_tonumber(table.L, -1); // gets the double at the top of the stack
+        lua_pop(table.L, 2); // pops the value of the variable and the subtable, table is now on -2
+        vars[key] = value;
+    }
+    lua_pop (table.L, lua_gettop(table.L) - stackTop);
+    table.popRef();
+}
+
 string format_double(double value) {
     // Return value without trailing zeros, see https://stackoverflow.com/a/13709929
     string result = to_string(value);

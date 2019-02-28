@@ -246,8 +246,6 @@ struct Model {
 	void clearModel();
 	void updateFromLua ();
 	void updateSceneObjects();
-	void updateVariables (const LuaParameterExpression &expr);
-	void updateVariables (const ExpressionVector3D &expr);
 
 	private:
 		Model(const Model &model) {}
