@@ -62,9 +62,7 @@ LuaTable luaTableFromExpressionWithExpressions(const char *lua_expr);
 
 LuaParameterExpression parseExpression(const std::string &lua_expr, const std::map<std::string, double> &known_vars);
 
-std::string serializeLuaTableWithExpressions(LuaTable table);
-
-std::string serializeOrderedLuaTableWithExpressions(LuaTable table);
+std::string serializeOrderedLuaTableWithExpressions(LuaTable table, std::map<std::string, double> &variables);
 
 void updateVariables(LuaTable &table, std::map<std::string, double> &vars);
 

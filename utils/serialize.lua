@@ -133,7 +133,9 @@ function serialize (o, tabs, sorted, level, vars)
 	   elseif o.operation == "const" then
 		   result = result .. serialize(o.value, "", 0, level + 1, vars)
 	   elseif o.operation == "var" then
-		   vars[o.name] = o.value
+		   if vars[o.name] == nil then
+			   vars[o.name] = o.value
+		   end
 		   result = result .. o.name
        end
    else

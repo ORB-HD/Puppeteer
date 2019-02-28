@@ -247,6 +247,9 @@ struct Model {
 	void updateFromLua ();
 	void updateSceneObjects();
 
+	void readVariablesFromLua();
+	void setVariable(std::string name, double value);
+
 	private:
 		Model(const Model &model) {}
 		Model & operator=(const Model &model) { return *this; }

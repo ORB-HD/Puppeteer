@@ -50,33 +50,6 @@ struct LuaParseError : public exception {
     }
 };
 
-void updateVariables(LuaTable &table, std::map<std::string, double> &vars) {
-    vars.clear();
-    table.pushRef();
-    int stackTop = lua_gettop(table.L);
-
-    lua_getglobal (table.L, "_expressions_variable_index");
-    std::string key;
-    double value;
-
-    if (lua_isnil(table.L, -1)) {
-        return;
-    }
-
-    lua_pushnil(table.L);  // put "first" key on stack, table is now on -2
-    while (lua_next(table.L, -2) != 0) { // pops the key from -1, pushes key to -2 and value to -1, table is now on -3
-        key = lua_tostring(table.L, -2);
-
-        lua_pushstring(table.L, "value"); // pushes a key to -1, table is now on -4, sub-table is now -2
-        lua_gettable(table.L, -2); // pops the key at -1 and replaces it with the value of the variable
-        value = lua_tonumber(table.L, -1); // gets the double at the top of the stack
-        lua_pop(table.L, 2); // pops the value of the variable and the subtable, table is now on -2
-        vars[key] = value;
-    }
-    lua_pop (table.L, lua_gettop(table.L) - stackTop);
-    table.popRef();
-}
-
 string format_double(double value) {
     // Return value without trailing zeros, see https://stackoverflow.com/a/13709929
     string result = to_string(value);
@@ -197,41 +170,7 @@ LuaParameterExpression LuaParameterExpression::operator+(const float &other) con
     return wrap;
 }
 
-std::string serializeLuaTableWithExpressions(LuaTable tbl) {
-    tbl.pushRef();
-
-    std::string result;
-
-    int current_top = lua_gettop(tbl.L);
-    if (lua_gettop(tbl.L) != 0) {
-        if (luaL_loadstring(tbl.L, serialize_lua)) {
-            bail(tbl.L, "Error loading serialization function: ");
-        }
-
-        if (lua_pcall(tbl.L, 0, 0, 0)) {
-            bail(tbl.L, "Error compiling serialization function: ");
-        }
-
-        lua_getglobal (tbl.L, "serialize");
-        assert (lua_isfunction(tbl.L, -1));
-        lua_pushvalue(tbl.L, -2);
-        if (lua_pcall(tbl.L, 1, 1, 0)) {
-            bail(tbl.L, "Error while serializing: ");
-        }
-        result = string("return ") + lua_tostring (tbl.L, -1);
-    } else {
-        cerr << "Cannot serialize global Lua state!" << endl;
-        abort();
-    }
-
-    lua_pop (tbl.L, lua_gettop(tbl.L) - current_top);
-
-    tbl.popRef();
-
-    return result;
-}
-
-std::string serializeOrderedLuaTableWithExpressions(LuaTable tbl) {
+std::string serializeOrderedLuaTableWithExpressions(LuaTable tbl, std::map<std::string, double> &variables) {
     tbl.pushRef();
 
     std::string result;
@@ -251,7 +190,16 @@ std::string serializeOrderedLuaTableWithExpressions(LuaTable tbl) {
         lua_pushvalue(tbl.L, -2);
         lua_pushstring(tbl.L, "");
         lua_pushboolean(tbl.L, true);
-        if (lua_pcall(tbl.L, 3, 1, 0)) {
+        lua_pushnumber(tbl.L, 1);
+        lua_createtable(tbl.L, 0, variables.size());
+
+        for (auto var : variables) {
+            lua_pushstring(tbl.L, var.first.c_str());
+            lua_pushnumber(tbl.L, var.second);
+            lua_settable(tbl.L, -3);
+        }
+
+        if (lua_pcall(tbl.L, 5, 1, 0)) {
             bail(tbl.L, "Error while serializing: ");
         }
         result = lua_tostring (tbl.L, -1);

@@ -636,6 +636,35 @@ void Model::clearModel() {
 	frameIdToRbdlId.clear();
 }
 
+void Model::readVariablesFromLua() {
+	luaTable->pushRef();
+	int stackTop = lua_gettop(luaTable->L);
+
+	lua_getglobal (luaTable->L, "_expressions_variable_index");
+	std::string key;
+	double value;
+
+	if (lua_isnil(luaTable->L, -1)) {
+		lua_pop (luaTable->L, lua_gettop(luaTable->L) - stackTop);
+		luaTable->popRef();
+		return;
+	}
+	expressionVariables.clear();
+
+	lua_pushnil(luaTable->L);  // put "first" key on stack, table is now on -2
+	while (lua_next(luaTable->L, -2) != 0) { // pops the key from -1, pushes key to -2 and value to -1, table is now on -3
+		key = lua_tostring(luaTable->L, -2);
+
+		lua_pushstring(luaTable->L, "value"); // pushes a key to -1, table is now on -4, sub-table is now -2
+		lua_gettable(luaTable->L, -2); // pops the key at -1 and replaces it with the value of the variable
+		value = lua_tonumber(luaTable->L, -1); // gets the double at the top of the stack
+		lua_pop(luaTable->L, 2); // pops the value of the variable and the subtable, table is now on -2
+		expressionVariables[key] = value;
+	}
+	lua_pop (luaTable->L, lua_gettop(luaTable->L) - stackTop);
+	luaTable->popRef();
+}
+
 void Model::updateFromLua() {
 	clearModel();
 
@@ -645,7 +674,7 @@ void Model::updateFromLua() {
 		rbdlModel->gravity = (*luaTable)["gravity"].get<RigidBodyDynamics::Math::Vector3d>();
 	}
 
-	updateVariables(*luaTable, expressionVariables);
+	readVariablesFromLua();
 
 	int frame_count = (*luaTable)["frames"].length();
 
@@ -859,7 +888,7 @@ void Model::saveStateToFile (const char* filename) {
 	for (size_t i = 0; i < modelStateQ.size(); i++) {
 		state_table[i + 1] = modelStateQ[i];
 	}
-	string table_str = serializeOrderedLuaTableWithExpressions(state_table);
+	string table_str = serializeOrderedLuaTableWithExpressions(state_table, expressionVariables);
 	ofstream outfile (filename);
 	outfile << table_str;
 	outfile.close();
@@ -889,8 +918,60 @@ void Model::saveToFile(const char* filename) {
 	assert (luaTable);
 	assert (rbdlModel);
 
-	string table_str = serializeOrderedLuaTableWithExpressions(*luaTable);
+	string table_str = serializeOrderedLuaTableWithExpressions(*luaTable, expressionVariables);
 	ofstream outfile (filename);
 	outfile << table_str;
 	outfile.close();
+}
+
+void Model::setVariable(std::string name, double value) {
+	expressionVariables[name] = value;
+
+	luaTable->pushRef();
+	int stackTop = lua_gettop(luaTable->L);
+	lua_getglobal (luaTable->L, "_expressions_variable_index");
+
+	if (lua_isnil(luaTable->L, -1)) {
+		lua_pop (luaTable->L, lua_gettop(luaTable->L) - stackTop);
+		luaTable->popRef();
+		return;
+	}
+
+	int stackIndex = lua_gettop(luaTable->L);
+
+	lua_createtable(luaTable->L, 0, 6);
+	int stackSubTable = lua_gettop(luaTable->L);
+
+	lua_pushstring(luaTable->L, "_type");
+	lua_pushstring(luaTable->L, "expression");
+	lua_settable(luaTable->L, stackSubTable);
+
+	lua_pushstring(luaTable->L, "operation");
+	lua_pushstring(luaTable->L, "var");
+	lua_settable(luaTable->L, stackSubTable);
+
+	lua_pushstring(luaTable->L, "p1");
+	lua_pushnil(luaTable->L);
+	lua_settable(luaTable->L, stackSubTable);
+
+	lua_pushstring(luaTable->L, "p2");
+	lua_pushnil(luaTable->L);
+	lua_settable(luaTable->L, stackSubTable);
+
+	lua_pushstring(luaTable->L, "name");
+	lua_pushstring(luaTable->L, name.c_str());
+	lua_settable(luaTable->L, stackSubTable);
+
+	lua_pushstring(luaTable->L, "value");
+	lua_pushnumber(luaTable->L, value);
+	lua_settable(luaTable->L, stackSubTable);
+
+	lua_pushstring(luaTable->L, name.c_str());
+	// now, our key is on top of our stack and our subtable value below, we need to swap them
+	lua_insert(luaTable->L, stackIndex + 1);
+	lua_settable(luaTable->L, stackIndex);
+
+	lua_pop (luaTable->L, lua_gettop(luaTable->L) - stackTop);
+	luaTable->popRef();
+	updateFromLua();
 }

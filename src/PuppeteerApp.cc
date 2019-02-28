@@ -1297,9 +1297,7 @@ void PuppeteerApp::valueChanged (QtProperty *property, double value) {
             qDebug() << "Warning! Unhandled value change of property " << property_name;
             return;
 		}
-		// TODO: This should move into a Model method
-		markerModel->expressionVariables[var_name.toStdString()] = value;
-		markerModel->updateFromLua();
+		markerModel->setVariable(var_name.toStdString(), value);
 	} else {
 		qDebug() << "Warning! Unhandled value change of property " << property_name;
 	}
