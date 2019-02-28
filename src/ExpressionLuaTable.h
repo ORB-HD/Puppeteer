@@ -45,7 +45,7 @@ struct LuaParameterExpression {
 
     string serialize();
 
-    double evaluate();
+    double evaluate(const std::map<std::string, double> &override_variables);
 
     bool operator==(const LuaParameterExpression &other) const;
 
@@ -106,11 +106,9 @@ public:
 
     ExpressionVector3D operator-(const Vector3f &other) const;
 
-    QVector3D toQVector3D() const;
+    Vector3f toVector3f(const std::map<std::string, double> &override_variables) const;
 
-    Vector3f toVector3f() const;
-
-    RigidBodyDynamics::Math::Vector3d toVector3d() const;
+    RigidBodyDynamics::Math::Vector3d toVector3d(const std::map<std::string, double> &override_variables) const;
 
 private:
     vector<LuaParameterExpression> v;
@@ -144,7 +142,7 @@ public:
 
     bool operator==(const ExpressionMatrix33 &other) const;
 
-    Matrix33f toMatrix33f();
+    Matrix33f toMatrix33f(const std::map<std::string, double> &override_variables);
 
 private:
     vector<ExpressionVector3D> v;

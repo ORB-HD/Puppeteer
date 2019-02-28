@@ -105,27 +105,33 @@ string LuaParameterExpression::serialize() {
     return serialize(0);
 }
 
-double LuaParameterExpression::evaluate() {
-    if (operation == "var" || operation == "const") {
+double LuaParameterExpression::evaluate(const std::map<std::string, double> &override_variables) {
+    if (operation == "var") {
+        try {
+            return override_variables.at(name);
+        } catch (std::out_of_range &e) {
+            return value;
+        }
+    } else if (operation == "const") {
         return value;
     } else if (operation == "mul") {
-        return parameters[0].evaluate() * parameters[1].evaluate();
+        return parameters[0].evaluate(override_variables) * parameters[1].evaluate(override_variables);
     } else if (operation == "add") {
-        return parameters[0].evaluate() + parameters[1].evaluate();
+        return parameters[0].evaluate(override_variables) + parameters[1].evaluate(override_variables);
     } else if (operation == "div") {
-        return parameters[0].evaluate() / parameters[1].evaluate();
+        return parameters[0].evaluate(override_variables) / parameters[1].evaluate(override_variables);
     } else if (operation == "sub") {
-        return parameters[0].evaluate() - parameters[1].evaluate();
+        return parameters[0].evaluate(override_variables) - parameters[1].evaluate(override_variables);
     } else if (operation == "mod") {
-        return (int) parameters[0].evaluate() % (int) parameters[1].evaluate();
+        return (int) parameters[0].evaluate(override_variables) % (int) parameters[1].evaluate(override_variables);
     } else if (operation == "pow") {
-        return pow(parameters[0].evaluate(), parameters[1].evaluate());
+        return pow(parameters[0].evaluate(override_variables), parameters[1].evaluate(override_variables));
     } else if (operation == "eq") {
-        return (parameters[0].evaluate() == parameters[1].evaluate()) ? 1 : 0;
+        return (parameters[0].evaluate(override_variables) == parameters[1].evaluate(override_variables)) ? 1 : 0;
     } else if (operation == "lt") {
-        return (parameters[0].evaluate() < parameters[1].evaluate()) ? 1 : 0;
+        return (parameters[0].evaluate(override_variables) < parameters[1].evaluate(override_variables)) ? 1 : 0;
     } else if (operation == "le") {
-        return (parameters[0].evaluate() <= parameters[1].evaluate()) ? 1 : 0;
+        return (parameters[0].evaluate(override_variables) <= parameters[1].evaluate(override_variables)) ? 1 : 0;
     } else {
         cerr << "Unknown operation '" << operation << "'" << endl;
         return 0;
@@ -337,18 +343,13 @@ ExpressionVector3D ExpressionVector3D::operator-(const Vector3f &other) const {
     return ExpressionVector3D(x() - other[0], y() - other[1], z() - other[2]);
 }
 
-RigidBodyDynamics::Math::Vector3d ExpressionVector3D::toVector3d() const {
-    return RigidBodyDynamics::Math::Vector3d(x().evaluate(), y().evaluate(), z().evaluate());
+RigidBodyDynamics::Math::Vector3d ExpressionVector3D::toVector3d(const std::map<std::string, double> &override_variables) const {
+    return RigidBodyDynamics::Math::Vector3d(x().evaluate(override_variables), y().evaluate(override_variables), z().evaluate(override_variables));
 }
 
-Vector3f ExpressionVector3D::toVector3f() const {
-    return Vector3f(static_cast<float>(x().evaluate()), static_cast<float>(y().evaluate()),
-                    static_cast<float>(z().evaluate()));
-}
-
-QVector3D ExpressionVector3D::toQVector3D() const {
-    return QVector3D(static_cast<float>(x().evaluate()), static_cast<float>(y().evaluate()),
-                     static_cast<float>(z().evaluate()));
+Vector3f ExpressionVector3D::toVector3f(const std::map<std::string, double> &override_variables) const {
+    return Vector3f(static_cast<float>(x().evaluate(override_variables)), static_cast<float>(y().evaluate(override_variables)),
+                    static_cast<float>(z().evaluate(override_variables)));
 }
 
 ExpressionVector3D ExpressionMatrix33::row1() const {
@@ -385,16 +386,16 @@ bool ExpressionMatrix33::operator==(const ExpressionMatrix33 &other) const {
            && row3() == other.row3();
 }
 
-Matrix33f ExpressionMatrix33::toMatrix33f() {
+Matrix33f ExpressionMatrix33::toMatrix33f(const std::map<std::string, double> &override_variables) {
     return Matrix33f(
-            static_cast<float>(row1().x().evaluate()),
-            static_cast<float>(row1().y().evaluate()),
-            static_cast<float>(row1().z().evaluate()),
-            static_cast<float>(row2().x().evaluate()),
-            static_cast<float>(row2().y().evaluate()),
-            static_cast<float>(row2().z().evaluate()),
-            static_cast<float>(row3().x().evaluate()),
-            static_cast<float>(row3().y().evaluate()),
-            static_cast<float>(row3().z().evaluate())
+            static_cast<float>(row1().x().evaluate(override_variables)),
+            static_cast<float>(row1().y().evaluate(override_variables)),
+            static_cast<float>(row1().z().evaluate(override_variables)),
+            static_cast<float>(row2().x().evaluate(override_variables)),
+            static_cast<float>(row2().y().evaluate(override_variables)),
+            static_cast<float>(row2().z().evaluate(override_variables)),
+            static_cast<float>(row3().x().evaluate(override_variables)),
+            static_cast<float>(row3().y().evaluate(override_variables)),
+            static_cast<float>(row3().z().evaluate(override_variables))
     );
 }

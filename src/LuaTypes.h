@@ -523,23 +523,5 @@ VisualsData LuaTableNode::getDefault<VisualsData>(const VisualsData &default_val
     return result;
 }
 
-template<>
-RigidBodyDynamics::Math::SpatialTransform LuaTableNode::getDefault<RigidBodyDynamics::Math::SpatialTransform>(
-        const RigidBodyDynamics::Math::SpatialTransform &default_value) {
-    RigidBodyDynamics::Math::SpatialTransform result = default_value;
-
-    if (stackQueryValue()) {
-        LuaTable vector_table = LuaTable::fromLuaState(luaTable->L);
-
-        result.r = vector_table["r"].getDefault<ExpressionVector3D>(ExpressionVector3D()).toVector3d();
-        result.E = vector_table["E"].getDefault<RigidBodyDynamics::Math::Matrix3d>(
-                RigidBodyDynamics::Math::Matrix3d::Identity(3, 3));
-    }
-
-    stackRestore();
-
-    return result;
-}
-
 /* MARKER_MODEL_LUA_TYPES */
 #endif

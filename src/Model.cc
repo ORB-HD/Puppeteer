@@ -328,7 +328,7 @@ void Model::updateSceneObjects() {
 		Transformation joint_transformation = visuals[i]->jointObject->transformation;
 		ExpressionVector3D mesh_center = (*luaTable)["frames"][visuals[i]->frameId]["visuals"][visuals[i]->visualIndex]["mesh_center"];
 
-		joint_transformation.translation = joint_transformation.translation + joint_transformation.rotation.rotate (mesh_center.toVector3f());
+		joint_transformation.translation = joint_transformation.translation + joint_transformation.rotation.rotate (mesh_center.toVector3f(expressionVariables));
 
 		visuals[i]->transformation.translation = joint_transformation.translation;
 		visuals[i]->transformation.rotation = joint_transformation.rotation * visuals[i]->data.orientation;
@@ -551,7 +551,7 @@ void Model::adjustParentVisualsScale (int frame_id, const Vector3f &old_r, const
 		ExpressionVector3D dimensions = (*luaTable)["frames"][parent_id]["visuals"][i + 1]["dimensions"];
 		ExpressionVector3D mesh_center = (*luaTable)["frames"][parent_id]["visuals"][i + 1]["mesh_center"];
 
-		Vector3f center_to_r = old_r - mesh_center.toVector3f();
+		Vector3f center_to_r = old_r - mesh_center.toVector3f(expressionVariables);
 		Vector3f delta_dim (
 				copysign(delta_r[0], center_to_r[0] * delta_r[0]),
 				copysign(delta_r[1], center_to_r[1] * delta_r[1]),
@@ -595,7 +595,7 @@ void Model::setJointLocationLocal (int frame_id, const ExpressionVector3D &locat
 	ExpressionVector3D old_location = (*luaTable)["frames"][frame_id]["joint_frame"]["r"];
 	(*luaTable)["frames"][frame_id]["joint_frame"]["r"] = location;
 
-	adjustParentVisualsScale (frame_id, old_location.toVector3f(), location.toVector3f());
+	adjustParentVisualsScale (frame_id, old_location.toVector3f(expressionVariables), location.toVector3f(expressionVariables));
 	
 	updateFromLua();
 }
@@ -693,7 +693,11 @@ void Model::updateFromLua() {
 			abort();
 		}
 
-		SpatialTransform joint_frame = (*luaTable)["frames"][i]["joint_frame"].getDefault(SpatialTransform());
+		SpatialTransform joint_frame = SpatialTransform();
+		joint_frame.r = (*luaTable)["frames"][i]["joint_frame"]["r"].getDefault<ExpressionVector3D>(ExpressionVector3D()).toVector3d(expressionVariables);
+		joint_frame.E = (*luaTable)["frames"][i]["joint_frame"]["E"].getDefault<RigidBodyDynamics::Math::Matrix3d>(
+				RigidBodyDynamics::Math::Matrix3d::Identity(3, 3));
+
         RigidBodyDynamics::Joint joint = (*luaTable)["frames"][i]["joint"].getDefault(RigidBodyDynamics::Joint(RigidBodyDynamics::JointTypeFixed));
         RigidBodyDynamics::Body body = (*luaTable)["frames"][i]["body"].getDefault(RigidBodyDynamics::Body());
 
@@ -729,8 +733,8 @@ void Model::updateFromLua() {
 			for (size_t vi = 1; vi <= (*luaTable)["frames"][i]["visuals"].length(); vi++) {
 				VisualsData visual_data = (*luaTable)["frames"][i]["visuals"][vi];
 
-				assert ((visual_data.scale + Vector3f (-1.f, -1.f, -1.f)).toVector3f().squaredNorm() < 1.0e-5 && "visuals.scale not (yet) supported!");
-				assert ((visual_data.translate - Vector3f (-1.f, -1.f, -1.f)).toVector3f().squaredNorm() < 1.0e-5 && "visuals.translate not (yet) supported!");
+				assert ((visual_data.scale + Vector3f (-1.f, -1.f, -1.f)).toVector3f(expressionVariables).squaredNorm() < 1.0e-5 && "visuals.scale not (yet) supported!");
+				assert ((visual_data.translate - Vector3f (-1.f, -1.f, -1.f)).toVector3f(expressionVariables).squaredNorm() < 1.0e-5 && "visuals.translate not (yet) supported!");
 
 				// setup of the scene object
 				VisualsObject* visual_scene_object = getVisualsObject (i, vi);
@@ -808,20 +812,20 @@ void Model::updateFromLua() {
 				visual_scene_object->mesh = mesh;
 
 				Transformation object_transformation = joint_scene_object->transformation;
-				if ( visual_data.dimensions.toVector3f().norm() < 1.0e-8) {
-					object_transformation.scaling = visual_data.scale.toVector3f();
+				if ( visual_data.dimensions.toVector3f(expressionVariables).norm() < 1.0e-8) {
+					object_transformation.scaling = visual_data.scale.toVector3f(expressionVariables);
 				} else {
 					// setup of the transformation
 					Vector3f bbox_size (mesh.bbox_max - mesh.bbox_min);
 					Vector3f scale (
-							abs(visual_data.dimensions[0].evaluate()) / bbox_size[0],
-							abs(visual_data.dimensions[1].evaluate()) / bbox_size[1],
-							abs(visual_data.dimensions[2].evaluate()) / bbox_size[2]
+							abs(visual_data.dimensions[0].evaluate(expressionVariables)) / bbox_size[0],
+							abs(visual_data.dimensions[1].evaluate(expressionVariables)) / bbox_size[1],
+							abs(visual_data.dimensions[2].evaluate(expressionVariables)) / bbox_size[2]
 							);
 					object_transformation.scaling = scale;
 				}
 
-				object_transformation.translation = object_transformation.translation + object_transformation.rotation.rotate (visual_data.mesh_center.toVector3f());
+				object_transformation.translation = object_transformation.translation + object_transformation.rotation.rotate (visual_data.mesh_center.toVector3f(expressionVariables));
 				
 				visual_scene_object->transformation = object_transformation;
 			}
