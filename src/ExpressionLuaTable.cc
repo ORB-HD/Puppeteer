@@ -43,13 +43,6 @@ void bail(lua_State *L, const char *msg);
 
 std::string get_file_directory(const char *filename);
 
-
-struct LuaParseError : public exception {
-    const char *what() const throw() {
-        return "LuaParseError";
-    }
-};
-
 string format_double(double value) {
     // Return value without trailing zeros, see https://stackoverflow.com/a/13709929
     string result = to_string(value);
@@ -250,19 +243,11 @@ LuaParameterExpression parseExpression(const std::string &lua_expr, const std::m
         body += entry.first + " = Variable(\"" + entry.first + "\", " + format_double(entry.second) + ")\n";
     }
     body += "return {value = " + lua_expr + "};";
-    try {
-        LuaTable t = luaTableFromExpressionWithExpressions(body.c_str());
-        if (!t["value"].exists()) {
-            // TODO: Feedback error to user
-            cerr << body << endl;
-            return LuaParameterExpression();
-        }
-        return t["value"].get<LuaParameterExpression>();
-    } catch (LuaParseError &e) {
-        // TODO: Feedback error to user
-        cerr << body << endl;
-        return LuaParameterExpression();
+    LuaTable t = luaTableFromExpressionWithExpressions(body.c_str());
+    if (!t["value"].exists()) {
+        throw LuaParseError();
     }
+    return t["value"].get<LuaParameterExpression>();
 }
 
 LuaTable luaTableFromExpressionWithExpressions(const char *lua_expr) {

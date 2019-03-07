@@ -1272,14 +1272,33 @@ void PuppeteerApp::modelStatePlotColorChanged(QtProperty *property, QColor color
     updateGraph();
 }
 
+void PuppeteerApp::markPropertyRed(QtProperty *property) {
+    for (auto &item : propertiesBrowser->items(property)) {
+    	propertiesBrowser->setBackgroundColor(item, QColor(255, 128, 128));
+    }
+}
+
+void PuppeteerApp::unmarkPropertyRed(QtProperty *property) {
+	for (auto &item : propertiesBrowser->items(property)) {
+		propertiesBrowser->setBackgroundColor(item, QColor(255, 255, 255));
+	}
+}
+
 void PuppeteerApp::valueChanged (QtProperty *property, QString value) {
 	if (!propertyToName.contains(property))
 		return;
 
 	QString property_name = propertyToName[property];
 
+
 	if (property_name.startsWith ("body_mass")) {
-		markerModel->setBodyMass(activeModelFrame, value);
+		try {
+			markerModel->setBodyMass(activeModelFrame,
+									 parseExpression(value.toStdString(), markerModel->expressionVariables));
+			unmarkPropertyRed(property);
+		} catch (LuaParseError &e) {
+		    markPropertyRed(property);
+		}
 	} else {
 		qDebug() << "Warning! Unhandled value change of property " << property_name;
 	}

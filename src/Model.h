@@ -228,7 +228,7 @@ struct Model {
 
 	void adjustParentVisualsScale (int frame_id, const Vector3f &old_r, const Vector3f &new_r);
 
-	void setBodyMass (int frame_id, QString mass);
+	void setBodyMass (int frame_id, LuaParameterExpression mass);
 	LuaParameterExpression getBodyMass (int frame_id);
 	void setBodyCOM (int frame_id, const ExpressionVector3D &com);
 	ExpressionVector3D getBodyCOM (int frame_id);

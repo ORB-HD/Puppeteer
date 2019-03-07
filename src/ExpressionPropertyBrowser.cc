@@ -34,22 +34,51 @@
 #include <QStyleOption>
 #include <QApplication>
 #include <QtCore/QCoreApplication>
+#include <vendor/QtPropertyBrowser/src/QtTreePropertyBrowser>
 
 #include "qteditorfactory.h"
 #include "luatables.h"
 
+
+void ExpressionVector3DPropertyManagerPrivate::markPropertyRed(QtProperty *property) {
+    for (auto &item : q_ptr->parent->items(property)) {
+        q_ptr->parent->setBackgroundColor(item, QColor(255, 128, 128));
+    }
+}
+
+void ExpressionVector3DPropertyManagerPrivate::unmarkPropertyRed(QtProperty *property) {
+    for (auto &item : q_ptr->parent->items(property)) {
+        q_ptr->parent->setBackgroundColor(item, QColor(255, 255, 255));
+    }
+}
+
 void ExpressionVector3DPropertyManagerPrivate::slotStringChanged(QtProperty *property, QString value) {
     if (QtProperty *prop = m_xToProperty.value(property, 0)) {
         ExpressionVector3D v = m_values[prop];
-        v.setX(parseExpression(value.toStdString(), q_ptr->model->expressionVariables));
+        try {
+            v.setX(parseExpression(value.toStdString(), q_ptr->model->expressionVariables));
+            unmarkPropertyRed(property);
+        } catch (LuaParseError &e) {
+            markPropertyRed(property);
+        }
         q_ptr->setValue(prop, v);
     } else if (QtProperty *prop = m_yToProperty.value(property, 0)) {
         ExpressionVector3D v = m_values[prop];
-        v.setY(parseExpression(value.toStdString(), q_ptr->model->expressionVariables));
+        try {
+            v.setY(parseExpression(value.toStdString(), q_ptr->model->expressionVariables));
+            unmarkPropertyRed(property);
+        } catch (LuaParseError &e) {
+            markPropertyRed(property);
+        }
         q_ptr->setValue(prop, v);
     } else if (QtProperty *prop = m_zToProperty.value(property, 0)) {
         ExpressionVector3D v = m_values[prop];
-        v.setZ(parseExpression(value.toStdString(), q_ptr->model->expressionVariables));
+        try {
+            v.setZ(parseExpression(value.toStdString(), q_ptr->model->expressionVariables));
+            unmarkPropertyRed(property);
+        } catch (LuaParseError &e) {
+            markPropertyRed(property);
+        }
         q_ptr->setValue(prop, v);
     }
 }
@@ -67,10 +96,11 @@ void ExpressionVector3DPropertyManagerPrivate::slotPropertyDestroyed(QtProperty 
     }
 }
 
-ExpressionVector3DPropertyManager::ExpressionVector3DPropertyManager(QObject *parent)
-        : QtAbstractPropertyManager(parent) {
+ExpressionVector3DPropertyManager::ExpressionVector3DPropertyManager(QtTreePropertyBrowser *_parent)
+        : QtAbstractPropertyManager(_parent) {
     d_ptr = new ExpressionVector3DPropertyManagerPrivate;
     d_ptr->q_ptr = this;
+    parent = _parent;
 
     propertyLabel[0] = "X";
     propertyLabel[1] = "Y";

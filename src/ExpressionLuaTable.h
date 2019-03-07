@@ -35,6 +35,12 @@
 
 using namespace std;
 
+struct LuaParseError : public exception {
+    const char *what() const throw() {
+        return "LuaParseError";
+    }
+};
+
 struct LuaParameterExpression {
     string operation = "const";
     vector<LuaParameterExpression> parameters;

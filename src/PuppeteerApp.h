@@ -130,6 +130,8 @@ protected:
 			nameToProperty[name] = property;
 		}
 		void updateSliderBounds ();
+		void markPropertyRed (QtProperty *property);
+	    void unmarkPropertyRed (QtProperty *property);
 
 public slots:
 		void execAboutDialog();

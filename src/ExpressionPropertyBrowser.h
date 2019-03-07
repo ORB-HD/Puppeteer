@@ -30,6 +30,7 @@
 #include <vendor/QtPropertyBrowser/src/QtDoublePropertyManager>
 #include <QtCore/QMap>
 #include <Model.h>
+#include <vendor/QtPropertyBrowser/src/QtTreePropertyBrowser>
 #include "ExpressionLuaTable.h"
 
 using namespace std;
@@ -40,7 +41,7 @@ class ExpressionVector3DPropertyManagerPrivate;
 class ExpressionVector3DPropertyManager : public QtAbstractPropertyManager {
 Q_OBJECT
 public:
-    ExpressionVector3DPropertyManager(QObject *parent = 0);
+    ExpressionVector3DPropertyManager(QtTreePropertyBrowser *parent = 0);
     ~ExpressionVector3DPropertyManager();
 
     QtStringPropertyManager *subStringPropertyManager() const;
@@ -48,6 +49,7 @@ public:
     ExpressionVector3D value(const QtProperty *property) const;
     void setPropertyLabels (const QString &label_x, const QString &label_y, const QString &label_z);
     Model *model;
+    QtTreePropertyBrowser *parent;
 public Q_SLOTS:
     void setValue(QtProperty *property, const ExpressionVector3D &val);
 Q_SIGNALS:
@@ -69,6 +71,9 @@ class ExpressionVector3DPropertyManagerPrivate {
     ExpressionVector3DPropertyManager *q_ptr;
 
     Q_DECLARE_PUBLIC(ExpressionVector3DPropertyManager)
+
+    void markPropertyRed(QtProperty *property);
+    void unmarkPropertyRed(QtProperty *property);
 
 public:
 

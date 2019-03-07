@@ -566,8 +566,8 @@ void Model::adjustParentVisualsScale (int frame_id, const Vector3f &old_r, const
 	}
 }
 
-void Model::setBodyMass (int frame_id, QString mass) {
-	(*luaTable)["frames"][frame_id]["body"]["mass"] = parseExpression(mass.toStdString(), expressionVariables);
+void Model::setBodyMass (int frame_id, LuaParameterExpression mass) {
+	(*luaTable)["frames"][frame_id]["body"]["mass"] = mass;
 }
 
 LuaParameterExpression Model::getBodyMass (int frame_id) {
