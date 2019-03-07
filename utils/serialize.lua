@@ -160,9 +160,14 @@ function serialize (o, tabs, sorted, level, vars)
     print ("not serializing entry of type " .. type(o) )
   end
   if level == 1 then
-	  local varstring = "if Variable == nil then function Variable(name, value) return value end end\n"
+	  local varstring = ""
+      local hasvar = false
       for k, v in pairs_func(vars) do
           varstring = varstring .. k .. " = Variable('" .. k .. "', " .. v ..")\n"
+		  hasvar = true
+	  end
+	  if hasvar then
+          varstring = "if Variable == nil then function Variable(name, value) return value end end\n" .. varstring
 	  end
 	  result = varstring .. "return " .. result
   end
