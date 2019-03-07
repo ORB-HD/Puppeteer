@@ -346,7 +346,7 @@ void ModelFitter::setup() {
 
 	for (int frame_id = 1; frame_id <= frame_count; frame_id++) {
 		unsigned int body_id = model->frameIdToRbdlId[frame_id];
-		vector<Vector3f> marker_coords = model->getFrameMarkerCoords(frame_id);
+		vector<ExpressionVector3D> marker_coords = model->getFrameMarkerCoords(frame_id);
 		vector<string> marker_names = model->getFrameMarkerNames(frame_id);
 
 		assert (marker_coords.size() == marker_names.size());
@@ -369,7 +369,7 @@ void ModelFitter::setup() {
 			residual_index++;
 
 			internal->body_ids.push_back (body_id);
-			internal->body_points.push_back (ConvertVector<rbdlVector3d, Vector3d> (marker_coords[marker_idx]));
+			internal->body_points.push_back (ConvertVector<rbdlVector3d, Vector3d> (marker_coords[marker_idx].toVector3f(model->expressionVariables)));
 
 			internal->target_pos.push_back (marker_data_pos);
 		}

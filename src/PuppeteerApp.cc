@@ -668,7 +668,7 @@ void PuppeteerApp::assignMarkers() {
 	for (unsigned int i = 0; i < marker_names.size(); i++) {
 		marker_position = markerData->getMarkerCurrentPosition(marker_names[i].c_str());
 		local_coords = markerModel->calcMarkerLocalCoords(frame_ids[i], marker_position);
-		markerModel->setFrameMarkerCoord (frame_ids[i],marker_names[i].c_str(),local_coords);
+		markerModel->setFrameMarkerCoord (frame_ids[i],marker_names[i].c_str(), ExpressionVector3D(local_coords));
 	}
 
 	for(unsigned int i = 0; i < frame_ids[i]; ++i){
@@ -1097,11 +1097,11 @@ void PuppeteerApp::updatePropertiesForFrame (unsigned int frame_id) {
 	// markers
 	QtProperty *marker_group = groupManager->addProperty("Markers");
 	vector<string> marker_names = markerModel->getFrameMarkerNames(frame_id);
-	vector<Vector3f> marker_coords = markerModel->getFrameMarkerCoords(frame_id);
+	vector<ExpressionVector3D> marker_coords = markerModel->getFrameMarkerCoords(frame_id);
 	for (size_t i = 0; i < marker_names.size(); i++) {
-		QtProperty *marker_coordinates_property = vector3DPropertyManager->addProperty(marker_names[i].c_str());
-		vector3DPropertyManager->setValue (marker_coordinates_property, QVector3D (marker_coords[i][0], marker_coords[i][1], marker_coords[i][2])); 
-		registerProperty (marker_coordinates_property, "marker_coordinates");
+		QtProperty *marker_coordinates_property = expressionVector3DPropertyManager->addProperty(marker_names[i].c_str());
+		expressionVector3DPropertyManager->setValue (marker_coordinates_property, marker_coords[i]);
+		registerProperty (marker_coordinates_property, QString::fromStdString("marker_coordinates_" + marker_names[i]));
 		marker_group->addSubProperty (marker_coordinates_property);
 	}
 	item = propertiesBrowser->addProperty (marker_group);
@@ -1335,6 +1335,7 @@ void PuppeteerApp::valueChanged (QtProperty *property, ExpressionVector3D value)
 		return;
 
 	QString property_name = propertyToName[property];
+	cout << property_name.toStdString() << endl;
 
 	if (property_name.startsWith("body_com")) {
 		markerModel->setBodyCOM (activeModelFrame, ExpressionVector3D(value.x(), value.y(), value.z()));
@@ -1375,6 +1376,14 @@ void PuppeteerApp::valueChanged (QtProperty *property, ExpressionVector3D value)
 			qDebug() << "Warning! Unhandled value change of property " << property_name;
 		}
 		markerModel->setBodyInertia (activeModelFrame, inertia);
+	} else if (property_name.startsWith("marker_coordinates")) {
+		QRegExp rx("marker_coordinates_(\\w+)");
+		if (!rx.exactMatch (property_name)) {
+			qDebug() << "Warning! Unhandled value change of property " << property_name;
+			return;
+		}
+		ExpressionVector3D coord (value.x(), value.y(), value.z());
+		markerModel->setFrameMarkerCoord (activeModelFrame, rx.cap(1).toStdString().c_str(), coord);
 	} else {
 		qDebug() << "Warning! Unhandled value change of property " << property_name;
 	}
@@ -1397,9 +1406,6 @@ void PuppeteerApp::valueChanged (QtProperty *property, QVector3D value) {
 		Vector3f yxz_rotation (value.x(), value.y(), value.z());
 		Quaternion rotation = Quaternion::fromEulerYXZ (yxz_rotation);
 		markerModel->setJointOrientationLocalEulerYXZ (activeModelFrame, rotation.toEulerYXZ());
-	} else if (property_name.startsWith("marker_coordinates")) {
-		Vector3f coord (value.x(), value.y(), value.z());
-		markerModel->setFrameMarkerCoord (activeModelFrame, property->propertyName().toLatin1(), coord);
 	} else if (property_name.startsWith ("contact_point_position_global")) {
 		ContactPointObject* contact_point_object = dynamic_cast<ContactPointObject*>(scene->getObject<SceneObject>(activeObject));
 

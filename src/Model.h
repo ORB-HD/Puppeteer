@@ -188,11 +188,11 @@ struct Model {
 	ContactPointObject* getContactPointObject (int contact_point_index);
 
 	int getFrameMarkerCount (int frame_id);
-	std::vector<Vector3f> getFrameMarkerCoords (int frame_id);
+	std::vector<ExpressionVector3D> getFrameMarkerCoords (int frame_id);
 	std::vector<std::string> getFrameMarkerNames(int frame_id);
 	Vector3f calcMarkerLocalCoords (int frame_id, const Vector3f &global_coords);
 	Vector3f getMarkerPosition (int frame_id, const char* marker_name);
-	void setFrameMarkerCoord (int frame_id, const char* marker_name, const Vector3f &coord);
+	void setFrameMarkerCoord (int frame_id, const char* marker_name, const ExpressionVector3D &coord);
 	void deleteFrameMarker (int frame_id, const char* marker_name);
 
 	int getParentFrameId (int frame_id);

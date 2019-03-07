@@ -266,12 +266,12 @@ std::vector<std::string> Model::getFrameMarkerNames(int frame_id) {
 	return result;
 }
 
-std::vector<Vector3f> Model::getFrameMarkerCoords (int frame_id) {
-	vector<Vector3f> result;
+std::vector<ExpressionVector3D> Model::getFrameMarkerCoords (int frame_id) {
+	vector<ExpressionVector3D> result;
 	vector<string> names = getFrameMarkerNames(frame_id);
 
 	for (size_t i = 0; i < names.size(); i++) {
-		result.push_back ((*luaTable)["frames"][frame_id]["markers"][names[i].c_str()].getDefault<Vector3f>(Vector3f (0.f, 0.f, 0.f)));
+		result.push_back ((*luaTable)["frames"][frame_id]["markers"][names[i].c_str()].getDefault<ExpressionVector3D>(ExpressionVector3D()));
 	}
 
 	return result;
@@ -290,9 +290,10 @@ Vector3f Model::calcMarkerLocalCoords (int frame_id, const Vector3f &coord) {
 
 Vector3f Model::getMarkerPosition (int frame_id, const char* marker_name) {
 	updateModelState();
-	Vector3f marker_local_coords ((*luaTable)["frames"][frame_id]["markers"][marker_name].getDefault<Vector3f>(Vector3f (0.f, 0.f, 0.f)));
+	ExpressionVector3D marker_local_coords ((*luaTable)["frames"][frame_id]["markers"][marker_name].getDefault<ExpressionVector3D>(ExpressionVector3D()));
 
-	RBDLVector3d rbdl_coords (marker_local_coords[0], marker_local_coords[1], marker_local_coords[2]);
+	RBDLVector3d rbdl_coords (marker_local_coords[0].evaluate(expressionVariables),
+			marker_local_coords[1].evaluate(expressionVariables), marker_local_coords[2].evaluate(expressionVariables));
 	unsigned int body_id = frameIdToRbdlId[frame_id];
 
 	RBDLVectorNd Q (rbdlModel->q_size);
@@ -301,7 +302,7 @@ Vector3f Model::getMarkerPosition (int frame_id, const char* marker_name) {
 	return ConvertToSimpleMathVec3 (rbdl_global);
 }
 
-void Model::setFrameMarkerCoord (int frame_id, const char* marker_name, const Vector3f &coord) {
+void Model::setFrameMarkerCoord (int frame_id, const char* marker_name, const ExpressionVector3D &coord) {
 	(*luaTable)["frames"][frame_id]["markers"][marker_name] = coord;
 	updateFromLua();
 }
@@ -339,7 +340,7 @@ void Model::updateSceneObjects() {
 		std::string marker_name = modelMarkers[i]->markerName;
 		int rbdl_id = frameIdToRbdlId[frame_id];
 
-		Vector3f local_coords = (*luaTable)["frames"][frame_id]["markers"][marker_name.c_str()].getDefault<Vector3f>(Vector3f (0.f, 0.f, 0.f));
+		Vector3f local_coords = (*luaTable)["frames"][frame_id]["markers"][marker_name.c_str()].getDefault<ExpressionVector3D>(ExpressionVector3D()).toVector3f(expressionVariables);
 
 		RBDLVector3d rbdl_vec3 = CalcBodyToBaseCoordinates (*rbdlModel, q, rbdl_id, RigidBodyDynamics::Math::Vector3d (local_coords[0], local_coords[1], local_coords[2]), false);
 

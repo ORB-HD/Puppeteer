@@ -77,6 +77,15 @@ public:
     ExpressionVector3D() : ExpressionVector3D(zeroExpression(), zeroExpression(), zeroExpression()) {
     }
 
+    ExpressionVector3D(Vector3f d) {
+        v.push_back(zeroExpression());
+        v.push_back(zeroExpression());
+        v.push_back(zeroExpression());
+        v[0].value = d[0];
+        v[1].value = d[1];
+        v[2].value = d[2];
+    }
+
     ExpressionVector3D(double xpos, double ypos, double zpos) {
         v.push_back(zeroExpression());
         v.push_back(zeroExpression());
