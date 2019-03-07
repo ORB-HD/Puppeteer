@@ -180,6 +180,8 @@ public slots:
 		void displayJoints (int display_state);
 		void displayPoints (int display_state);
 
+		void addNewVariableDialog();
+
 	signals:
 		void animation_fitting_complete();
 		void model_loaded();

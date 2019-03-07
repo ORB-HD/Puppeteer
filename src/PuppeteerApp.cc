@@ -31,6 +31,7 @@
 #include <QRegExpValidator>
 #include <QProgressDialog>
 #include <QMessageBox>
+#include <QInputDialog>
 
 #include "GLWidget.h" 
 #include "PuppeteerApp.h"
@@ -236,6 +237,8 @@ PuppeteerApp::PuppeteerApp(QWidget *parent)
 	connect (drawPointsCheckBox, SIGNAL (stateChanged(int)), this, SLOT (displayPoints(int)));
 
 	connect (toolButtonPlay, SIGNAL (clicked(bool)), this, SLOT (playButtonClicked(bool)));
+
+	connect (addNewVariableButton, SIGNAL (clicked()), this, SLOT (addNewVariableDialog()));
 
 	updateWidgetValidity();
 }
@@ -1161,6 +1164,7 @@ void PuppeteerApp::updatePropertiesEditor (int object_id) {
 	QtBrowserItem* item = NULL;
 
 	if (object_id < 0) {
+	    addNewVariableButton->show();
 
 		// If no object is selected, we display the variables that can be used in expressions and their current values
 		for (auto var : markerModel->expressionVariables) {
@@ -1172,6 +1176,8 @@ void PuppeteerApp::updatePropertiesEditor (int object_id) {
 
 		return;
 	}
+
+	addNewVariableButton->hide();
 
 	updateExpandStateRecursive(propertiesBrowser->topLevelItems(), "");
 
@@ -1297,7 +1303,9 @@ void PuppeteerApp::valueChanged (QtProperty *property, double value) {
             qDebug() << "Warning! Unhandled value change of property " << property_name;
             return;
 		}
-		markerModel->setVariable(var_name.toStdString(), value);
+		if (value != markerModel->expressionVariables[var_name.toStdString()]) {
+			markerModel->setVariable(var_name.toStdString(), value);
+		}
 	} else {
 		qDebug() << "Warning! Unhandled value change of property " << property_name;
 	}
@@ -1541,6 +1549,17 @@ void PuppeteerApp::displayPoints (int display_state) {
 
 	for (int i = 0; i < markerModel->contactPoints.size(); i++) {
 		markerModel->contactPoints[i]->noDraw = no_draw;
+	}
+}
+
+void PuppeteerApp::addNewVariableDialog () {
+	bool ok;
+	QString text = QInputDialog::getText(this, "Add new variable",
+										 "Variable name:", QLineEdit::Normal,
+										 "", &ok);
+	if (ok && !text.isEmpty()) {
+		markerModel->setVariable(text.toStdString(), 0.0);
+		updatePropertiesEditor(-1);
 	}
 }
 
