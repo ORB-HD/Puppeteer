@@ -1221,10 +1221,9 @@ void PuppeteerApp::updatePropertiesEditor (int object_id) {
 			stringManager->setValue (contact_point_parent_property, markerModel->getFrameName (contact_point_object->frameId).c_str());
 			propertiesBrowser->insertProperty (contact_point_parent_property, contact_point_name_property);
 
-			QtProperty *contact_point_local_property = vector3DPropertyManager->addProperty("Local Position");
-			Vector3f contact_point_local = markerModel->getContactPointLocal (contact_point_object->pointIndex);
-			vector3DPropertyManager->setValue (contact_point_local_property, QVector3D (contact_point_local[0], contact_point_local[1], contact_point_local[2]));
-			vector3DPropertyManager->setSingleStep (contact_point_local_property, 0.01);
+			QtProperty *contact_point_local_property = expressionVector3DPropertyManager->addProperty("Local Position");
+			ExpressionVector3D contact_point_local = markerModel->getContactPointLocal (contact_point_object->pointIndex);
+			expressionVector3DPropertyManager->setValue (contact_point_local_property, contact_point_local);
 			registerProperty (contact_point_local_property, "contact_point_position_local");
 			item = propertiesBrowser->addProperty (contact_point_local_property);
 			propertiesBrowser->setExpanded (item, false);
@@ -1384,6 +1383,16 @@ void PuppeteerApp::valueChanged (QtProperty *property, ExpressionVector3D value)
 		}
 		ExpressionVector3D coord (value.x(), value.y(), value.z());
 		markerModel->setFrameMarkerCoord (activeModelFrame, rx.cap(1).toStdString().c_str(), coord);
+	} else if (property_name.startsWith ("contact_point_position_local")) {
+		ContactPointObject* contact_point_object = dynamic_cast<ContactPointObject*>(scene->getObject<SceneObject>(activeObject));
+
+		if (!contact_point_object) {
+			cerr << "Cannot update contact point object: object id " << activeObject << " is not a contact point!" << endl;
+			abort();
+		}
+
+		ExpressionVector3D coords_local (value.x(), value.y(), value.z());
+		markerModel->setContactPointLocal (contact_point_object->pointIndex, coords_local);
 	} else {
 		qDebug() << "Warning! Unhandled value change of property " << property_name;
 	}
@@ -1416,16 +1425,6 @@ void PuppeteerApp::valueChanged (QtProperty *property, QVector3D value) {
 		
 		Vector3f coords_global (value.x(), value.y(), value.z());
 		markerModel->setContactPointGlobal (contact_point_object->pointIndex, coords_global);
-	} else if (property_name.startsWith ("contact_point_position_local")) {
-		ContactPointObject* contact_point_object = dynamic_cast<ContactPointObject*>(scene->getObject<SceneObject>(activeObject));
-
-		if (!contact_point_object) {
-			cerr << "Cannot update contact point object: object id " << activeObject << " is not a contact point!" << endl;
-			abort();
-		}
-		
-		Vector3f coords_local (value.x(), value.y(), value.z());
-		markerModel->setContactPointLocal (contact_point_object->pointIndex, coords_local);
 	} else {
 		qDebug() << "Warning! Unhandled value change of property " << property_name;
 	}

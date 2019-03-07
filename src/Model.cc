@@ -351,7 +351,7 @@ void Model::updateSceneObjects() {
 	for (size_t i = 0; i < contactPoints.size(); i++) {
 		int point_id = contactPoints[i]->pointIndex;
 		unsigned int rbdl_id = frameIdToRbdlId[contactPoints[i]->frameId];
-		Vector3f local_coords = (*luaTable)["points"][point_id]["point"].get<Vector3f>();
+		Vector3f local_coords = (*luaTable)["points"][point_id]["point"].getDefault<ExpressionVector3D>(ExpressionVector3D()).toVector3f(expressionVariables);
 
 		RBDLVector3d rbdl_vec3 = CalcBodyToBaseCoordinates (*rbdlModel, q, rbdl_id, RigidBodyDynamics::Math::Vector3d(local_coords[0], local_coords[1], local_coords[2]), false);
 
@@ -608,17 +608,17 @@ void Model::setContactPointGlobal (int contact_point_index, const Vector3f &glob
 	RBDLVector3d point_global (global_coords[0], global_coords[1], global_coords[2]);
 	RBDLVector3d point_local = CalcBaseToBodyCoordinates (*rbdlModel, Q, frameIdToRbdlId[contact_point->frameId], point_global, false);
 
-	(*luaTable)["points"][contact_point_index]["point"] = Vector3f (point_local[0], point_local[1], point_local[2]);
+	(*luaTable)["points"][contact_point_index]["point"] = ExpressionVector3D (point_local[0], point_local[1], point_local[2]);
 
 	updateFromLua();
 }
 
-void Model::setContactPointLocal (int contact_point_index, const Vector3f &local_coords) {
+void Model::setContactPointLocal (int contact_point_index, const ExpressionVector3D &local_coords) {
 	(*luaTable)["points"][contact_point_index]["point"] = local_coords;
 	updateFromLua();
 }
 
-Vector3f Model::getContactPointLocal (int contact_point_index) const {
+ExpressionVector3D Model::getContactPointLocal (int contact_point_index) const {
 	return (*luaTable)["points"][contact_point_index]["point"];
 }
 
@@ -860,7 +860,7 @@ void Model::updateFromLua() {
 			ContactPointObject* contact_point_scene_object = getContactPointObject (i);
 
 			contact_point_scene_object->pointIndex = i;
-			contact_point_scene_object->localCoords = (*luaTable)["points"][i]["point"].get<Vector3f>();
+			contact_point_scene_object->localCoords = (*luaTable)["points"][i]["point"].getDefault<ExpressionVector3D>(ExpressionVector3D());
 			contact_point_scene_object->name = (*luaTable)["points"][i]["name"].get<std::string>();
 			contact_point_scene_object->frameId = getFrameId((*luaTable)["points"][i]["body"].get<std::string>().c_str());
 

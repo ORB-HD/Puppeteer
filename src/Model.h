@@ -74,7 +74,7 @@ struct JointObject : public SceneObject {
 struct ContactPointObject: public SceneObject {
 	int frameId;
 	int pointIndex;
-	Vector3f localCoords;
+	ExpressionVector3D localCoords;
 	std::string name;
 };
 
@@ -236,8 +236,8 @@ struct Model {
 	ExpressionMatrix33 getBodyInertia (int frame_id);
 
 	void setContactPointGlobal (int contact_point_index, const Vector3f &global_coords);
-	void setContactPointLocal (int contact_point_index, const Vector3f &local_coords);
-	Vector3f getContactPointLocal (int contact_point_index) const;
+	void setContactPointLocal (int contact_point_index, const ExpressionVector3D &local_coords);
+	ExpressionVector3D getContactPointLocal (int contact_point_index) const;
 
 	bool loadFromFile (const char* filename);
 	void saveToFile (const char* filename);
