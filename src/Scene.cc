@@ -175,7 +175,7 @@ void Scene::draw() {
 		glDisable (GL_BLEND);
 
 		glPolygonMode (GL_BACK, GL_LINE);
-		glLineWidth (5.f);
+		glLineWidth (0.f);
 		glColor3f (1.f, 0.f, 0.f);
 
 		glStencilFuncSeparate(GL_BACK, GL_ALWAYS, 1, 1);
