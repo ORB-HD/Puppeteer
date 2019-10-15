@@ -12,6 +12,7 @@ SET (CMAKE_SKIP_BUILD_RPATH FALSE)
 SET (CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 SET (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 SET (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(CMAKE_AUTOMOC ON)
 
 # Enable proper C++11 flags
 INCLUDE(CheckCXXCompilerFlag)
@@ -71,6 +72,8 @@ SET ( SCENEGL_SRCS
 SET ( QtGLBaseApp_SRCS
 	src/main.cc
 	src/GLWidget.cc
+	src/ExpressionLuaTable.cc
+	src/ExpressionPropertyBrowser.cc
 	src/PuppeteerApp.cc
 	glew/src/glew.c
 	## CHART STUFF
@@ -81,6 +84,7 @@ QT5_WRAP_CPP ( QtGLBaseApp_MOC_SRCS
 	src/PuppeteerApp.h
 	src/PuppeteerAboutDialog.h
 	src/GLWidget.h
+	src/ExpressionPropertyBrowser.h
 	)
 
 ADD_LIBRARY ( SceneGL STATIC

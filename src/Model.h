@@ -30,6 +30,7 @@
 #include <map>
 
 #include "Scene.h"
+#include "ExpressionLuaTable.h"
 #include "SimpleMath/SimpleMath.h"
 #include "SimpleMath/SimpleMathGL.h"
 
@@ -50,17 +51,17 @@ struct VisualsData {
 		scale (-1.f, -1.f, -1.f),
 		dimensions (1.f, 1.f, 1.f),
 		color (1.f, 1.f, 1.f, 1.f),
-		mesh_center (-1.f, -1.f, -1.f),
+		mesh_center (LuaParameterExpression(), LuaParameterExpression(), LuaParameterExpression()),
 		translate (-1.f, -1.f, -1.f),
 		orientation (),
 		src ("")
 	{}
 
-	Vector3f scale;
-	Vector3f dimensions;
+	ExpressionVector3D scale;
+    ExpressionVector3D dimensions;
 	Vector4f color;
-	Vector3f mesh_center;
-	Vector3f translate;
+	ExpressionVector3D mesh_center;
+    ExpressionVector3D translate;
 	SimpleMath::GL::Quaternion orientation;
 	std::string src;
 };
@@ -73,7 +74,7 @@ struct JointObject : public SceneObject {
 struct ContactPointObject: public SceneObject {
 	int frameId;
 	int pointIndex;
-	Vector3f localCoords;
+	ExpressionVector3D localCoords;
 	std::string name;
 };
 
@@ -127,6 +128,7 @@ struct Model {
 	std::map<unsigned int, int> dofIndexToFrameId;
 	std::map<unsigned int, int> frameIdToRbdlId;
 	std::map<int, unsigned int> rbdlToFrameId;
+	std::map<std::string, double> expressionVariables;
 
 	bool isJointObject (int objectid) {
 		for (size_t i = 0; i < joints.size(); i++) {
@@ -186,11 +188,11 @@ struct Model {
 	ContactPointObject* getContactPointObject (int contact_point_index);
 
 	int getFrameMarkerCount (int frame_id);
-	std::vector<Vector3f> getFrameMarkerCoords (int frame_id);
+	std::vector<ExpressionVector3D> getFrameMarkerCoords (int frame_id);
 	std::vector<std::string> getFrameMarkerNames(int frame_id);
 	Vector3f calcMarkerLocalCoords (int frame_id, const Vector3f &global_coords);
 	Vector3f getMarkerPosition (int frame_id, const char* marker_name);
-	void setFrameMarkerCoord (int frame_id, const char* marker_name, const Vector3f &coord);
+	void setFrameMarkerCoord (int frame_id, const char* marker_name, const ExpressionVector3D &coord);
 	void deleteFrameMarker (int frame_id, const char* marker_name);
 
 	int getParentFrameId (int frame_id);
@@ -205,19 +207,19 @@ struct Model {
 	std::string getParentName (int frame_id);
 	Vector3f getFrameLocationGlobal (int frame_id);
 	Vector3f getFrameOrientationGlobalEulerYXZ (int frame_id);
-	Vector3f getJointLocationLocal (int frame_id);
+	ExpressionVector3D getJointLocationLocal (int frame_id);
 	Vector3f getJointOrientationLocalEulerYXZ (int frame_id);
-	void setJointLocationLocal (int frame_id, const Vector3f &location);
+	void setJointLocationLocal (int frame_id, const ExpressionVector3D &location);
 	void setJointOrientationLocalEulerYXZ (int frame_id, const Vector3f &yxz_euler);
 
-	void setVisualDimensions (int frame_id, int visuals_index, const Vector3f &dimensions);
-	Vector3f getVisualDimensions (int frame_id, int visuals_index);
-	void setVisualScale (int frame_id, int visuals_index, const Vector3f &scale);
-	Vector3f getVisualScale (int frame_id, int visuals_index);
-	void setVisualTranslate (int frame_id, int visuals_index, const Vector3f &translate);
-	Vector3f getVisualTranslate(int frame_id, int visuals_index);
-	void setVisualCenter (int frame_id, int visuals_index, const Vector3f &center);
-	Vector3f getVisualCenter(int frame_id, int visuals_index);
+	void setVisualDimensions (int frame_id, int visuals_index, const ExpressionVector3D &dimensions);
+	ExpressionVector3D getVisualDimensions (int frame_id, int visuals_index);
+	void setVisualScale (int frame_id, int visuals_index, const ExpressionVector3D &scale);
+	ExpressionVector3D getVisualScale (int frame_id, int visuals_index);
+	void setVisualTranslate (int frame_id, int visuals_index, const ExpressionVector3D &translate);
+	ExpressionVector3D getVisualTranslate(int frame_id, int visuals_index);
+	void setVisualCenter (int frame_id, int visuals_index, const ExpressionVector3D &center);
+	ExpressionVector3D getVisualCenter(int frame_id, int visuals_index);
 	void setVisualColor (int frame_id, int visuals_index, const Vector3f &color);
 	Vector3f getVisualColor(int frame_id, int visuals_index);
 
@@ -226,16 +228,16 @@ struct Model {
 
 	void adjustParentVisualsScale (int frame_id, const Vector3f &old_r, const Vector3f &new_r);
 
-	void setBodyMass (int frame_id, double mass);
-	double getBodyMass (int frame_id);
-	void setBodyCOM (int frame_id, const Vector3f &com);
-	Vector3f getBodyCOM (int frame_id);
-	void setBodyInertia (int frame_id, const Matrix33f &inertia);
-	Matrix33f getBodyInertia (int frame_id);
+	void setBodyMass (int frame_id, LuaParameterExpression mass);
+	LuaParameterExpression getBodyMass (int frame_id);
+	void setBodyCOM (int frame_id, const ExpressionVector3D &com);
+	ExpressionVector3D getBodyCOM (int frame_id);
+	void setBodyInertia (int frame_id, const ExpressionMatrix33 &inertia);
+	ExpressionMatrix33 getBodyInertia (int frame_id);
 
 	void setContactPointGlobal (int contact_point_index, const Vector3f &global_coords);
-	void setContactPointLocal (int contact_point_index, const Vector3f &local_coords);
-	Vector3f getContactPointLocal (int contact_point_index) const;
+	void setContactPointLocal (int contact_point_index, const ExpressionVector3D &local_coords);
+	ExpressionVector3D getContactPointLocal (int contact_point_index) const;
 
 	bool loadFromFile (const char* filename);
 	void saveToFile (const char* filename);
@@ -244,6 +246,9 @@ struct Model {
 	void clearModel();
 	void updateFromLua ();
 	void updateSceneObjects();
+
+	void readVariablesFromLua();
+	void setVariable(std::string name, double value);
 
 	private:
 		Model(const Model &model) {}

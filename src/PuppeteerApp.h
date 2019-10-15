@@ -43,6 +43,8 @@ extern "C" {
 }
 
 #include "vtkChart/chartXY.h"
+#include "ExpressionLuaTable.h"
+#include "ExpressionPropertyBrowser.h"
 
 // commandline interpreter for convenient configuration of the modeltest
 #include <tclap/CmdLine.h>
@@ -92,6 +94,7 @@ protected:
 		QtVector3DPropertyManager *vector3DReadOnlyPropertyManager;
 		QtVector3DPropertyManager *vector3DYXZPropertyManager;
 		QtVector3DPropertyManager *vector3DYXZReadOnlyPropertyManager;
+		ExpressionVector3DPropertyManager *expressionVector3DPropertyManager;
 		QtDoublePropertyManager *doubleReadOnlyManager;
 		QtDoublePropertyManager *doubleManager;
 		QtStringPropertyManager *stringManager;
@@ -102,6 +105,7 @@ protected:
 		QStringList visibility_types;
 
 		QtVector3DEditorFactory *vector3DEditorFactory;
+		ExpressionVector3DEditorFactory *expressionVector3DEditorFactory;
 		QtVector3DEditorFactory *vector3DYXZEditorFactory;
 		QtDoubleSpinBoxFactory *doubleSpinBoxFactory;
 		QtDoubleSpinBoxFactory *doubleSpinBoxFactoryModelStateEditor;
@@ -126,6 +130,8 @@ protected:
 			nameToProperty[name] = property;
 		}
 		void updateSliderBounds ();
+		void markPropertyRed (QtProperty *property);
+	    void unmarkPropertyRed (QtProperty *property);
 
 public slots:
 		void execAboutDialog();
@@ -163,8 +169,10 @@ public slots:
 		void modelStateValueChanged (QtProperty *property, double value);
 		void modelStatePlotVisibleChanged (QtProperty *property, int state);
 		void modelStatePlotColorChanged (QtProperty *property, QColor color);
+	    void valueChanged(QtProperty *property, QString value);
 		void valueChanged(QtProperty *property, double value);
 		void valueChanged(QtProperty *property, QVector3D value);
+		void valueChanged(QtProperty *property, ExpressionVector3D value);
 		void colorValueChanged(QtProperty *property, QColor value);
 		void captureFrameSliderChanged (int value);
 
@@ -173,6 +181,8 @@ public slots:
 		void displayBodySegments (int display_state);
 		void displayJoints (int display_state);
 		void displayPoints (int display_state);
+
+		void addNewVariableDialog();
 
 	signals:
 		void animation_fitting_complete();

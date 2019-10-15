@@ -36,7 +36,7 @@
 #include <clocale>
 #include <algorithm>
 #include <sys/stat.h>
-#include "luatables.h"
+#include "ExpressionLuaTable.h"
 
 #include <rbdl/rbdl.h>
 #include <rbdl/addons/luamodel/luamodel.h>
@@ -266,12 +266,12 @@ std::vector<std::string> Model::getFrameMarkerNames(int frame_id) {
 	return result;
 }
 
-std::vector<Vector3f> Model::getFrameMarkerCoords (int frame_id) {
-	vector<Vector3f> result;
+std::vector<ExpressionVector3D> Model::getFrameMarkerCoords (int frame_id) {
+	vector<ExpressionVector3D> result;
 	vector<string> names = getFrameMarkerNames(frame_id);
 
 	for (size_t i = 0; i < names.size(); i++) {
-		result.push_back ((*luaTable)["frames"][frame_id]["markers"][names[i].c_str()].getDefault<Vector3f>(Vector3f (0.f, 0.f, 0.f)));
+		result.push_back ((*luaTable)["frames"][frame_id]["markers"][names[i].c_str()].getDefault<ExpressionVector3D>(ExpressionVector3D()));
 	}
 
 	return result;
@@ -290,9 +290,10 @@ Vector3f Model::calcMarkerLocalCoords (int frame_id, const Vector3f &coord) {
 
 Vector3f Model::getMarkerPosition (int frame_id, const char* marker_name) {
 	updateModelState();
-	Vector3f marker_local_coords ((*luaTable)["frames"][frame_id]["markers"][marker_name].getDefault<Vector3f>(Vector3f (0.f, 0.f, 0.f)));
+	ExpressionVector3D marker_local_coords ((*luaTable)["frames"][frame_id]["markers"][marker_name].getDefault<ExpressionVector3D>(ExpressionVector3D()));
 
-	RBDLVector3d rbdl_coords (marker_local_coords[0], marker_local_coords[1], marker_local_coords[2]);
+	RBDLVector3d rbdl_coords (marker_local_coords[0].evaluate(expressionVariables),
+			marker_local_coords[1].evaluate(expressionVariables), marker_local_coords[2].evaluate(expressionVariables));
 	unsigned int body_id = frameIdToRbdlId[frame_id];
 
 	RBDLVectorNd Q (rbdlModel->q_size);
@@ -301,7 +302,7 @@ Vector3f Model::getMarkerPosition (int frame_id, const char* marker_name) {
 	return ConvertToSimpleMathVec3 (rbdl_global);
 }
 
-void Model::setFrameMarkerCoord (int frame_id, const char* marker_name, const Vector3f &coord) {
+void Model::setFrameMarkerCoord (int frame_id, const char* marker_name, const ExpressionVector3D &coord) {
 	(*luaTable)["frames"][frame_id]["markers"][marker_name] = coord;
 	updateFromLua();
 }
@@ -326,9 +327,9 @@ void Model::updateSceneObjects() {
 
 	for (size_t i = 0; i < visuals.size(); i++) {
 		Transformation joint_transformation = visuals[i]->jointObject->transformation;
-		Vector3f mesh_center = (*luaTable)["frames"][visuals[i]->frameId]["visuals"][visuals[i]->visualIndex]["mesh_center"].getDefault<Vector3f>(Vector3f (0.f, 0.f, 0.f));
+		ExpressionVector3D mesh_center = (*luaTable)["frames"][visuals[i]->frameId]["visuals"][visuals[i]->visualIndex]["mesh_center"];
 
-		joint_transformation.translation = joint_transformation.translation + joint_transformation.rotation.rotate (mesh_center);
+		joint_transformation.translation = joint_transformation.translation + joint_transformation.rotation.rotate (mesh_center.toVector3f(expressionVariables));
 
 		visuals[i]->transformation.translation = joint_transformation.translation;
 		visuals[i]->transformation.rotation = joint_transformation.rotation * visuals[i]->data.orientation;
@@ -339,7 +340,7 @@ void Model::updateSceneObjects() {
 		std::string marker_name = modelMarkers[i]->markerName;
 		int rbdl_id = frameIdToRbdlId[frame_id];
 
-		Vector3f local_coords = (*luaTable)["frames"][frame_id]["markers"][marker_name.c_str()].getDefault<Vector3f>(Vector3f (0.f, 0.f, 0.f));
+		Vector3f local_coords = (*luaTable)["frames"][frame_id]["markers"][marker_name.c_str()].getDefault<ExpressionVector3D>(ExpressionVector3D()).toVector3f(expressionVariables);
 
 		RBDLVector3d rbdl_vec3 = CalcBodyToBaseCoordinates (*rbdlModel, q, rbdl_id, RigidBodyDynamics::Math::Vector3d (local_coords[0], local_coords[1], local_coords[2]), false);
 
@@ -350,7 +351,7 @@ void Model::updateSceneObjects() {
 	for (size_t i = 0; i < contactPoints.size(); i++) {
 		int point_id = contactPoints[i]->pointIndex;
 		unsigned int rbdl_id = frameIdToRbdlId[contactPoints[i]->frameId];
-		Vector3f local_coords = (*luaTable)["points"][point_id]["point"].get<Vector3f>();
+		Vector3f local_coords = (*luaTable)["points"][point_id]["point"].getDefault<ExpressionVector3D>(ExpressionVector3D()).toVector3f(expressionVariables);
 
 		RBDLVector3d rbdl_vec3 = CalcBodyToBaseCoordinates (*rbdlModel, q, rbdl_id, RigidBodyDynamics::Math::Vector3d(local_coords[0], local_coords[1], local_coords[2]), false);
 
@@ -475,8 +476,8 @@ Vector3f Model::getFrameOrientationGlobalEulerYXZ (int frame_id) {
 	return SimpleMath::GL::Quaternion::fromMatrix(orientation).toEulerYXZ();
 }
 
-Vector3f Model::getJointLocationLocal (int frame_id) {
-	return (*luaTable)["frames"][frame_id]["joint_frame"]["r"].getDefault<Vector3f>(Vector3f::Zero());
+ExpressionVector3D Model::getJointLocationLocal (int frame_id) {
+	return (*luaTable)["frames"][frame_id]["joint_frame"]["r"].getDefault<ExpressionVector3D>(ExpressionVector3D());
 }
 
 Vector3f Model::getJointOrientationLocalEulerYXZ (int frame_id) {
@@ -485,40 +486,40 @@ Vector3f Model::getJointOrientationLocalEulerYXZ (int frame_id) {
 	return SimpleMath::GL::Quaternion::fromMatrix(orientation).toEulerYXZ();
 }
 
-void Model::setVisualDimensions (int frame_id, int visuals_index, const Vector3f &dimensions) {
+void Model::setVisualDimensions (int frame_id, int visuals_index, const ExpressionVector3D &dimensions) {
 	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["dimensions"] = dimensions;
 
 	updateFromLua();
 }
 
-Vector3f Model::getVisualDimensions (int frame_id, int visuals_index) {
-	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["dimensions"] ;
+ExpressionVector3D Model::getVisualDimensions (int frame_id, int visuals_index) {
+	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["dimensions"];
 }
 
-void Model::setVisualScale (int frame_id, int visuals_index, const Vector3f &scale) {
+void Model::setVisualScale (int frame_id, int visuals_index, const ExpressionVector3D &scale) {
 	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["scale"] = scale;
 	updateFromLua();
 }
 
-Vector3f Model::getVisualScale (int frame_id, int visuals_index) {
-	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["scale"].getDefault(Vector3f (1.f, 1.f, 1.f)) ;
+ExpressionVector3D Model::getVisualScale (int frame_id, int visuals_index) {
+	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["scale"].getDefault(ExpressionVector3D (1., 1., 1.));
 }
 
-void Model::setVisualCenter (int frame_id, int visuals_index, const Vector3f &center) {
+void Model::setVisualCenter (int frame_id, int visuals_index, const ExpressionVector3D &center) {
 	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"] = center;
 	updateFromLua();
 }
 
-Vector3f Model::getVisualCenter(int frame_id, int visuals_index) {
-	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"] ;
+ExpressionVector3D Model::getVisualCenter(int frame_id, int visuals_index) {
+	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_center"];
 }
 
-void Model::setVisualTranslate (int frame_id, int visuals_index, const Vector3f &translate) {
+void Model::setVisualTranslate (int frame_id, int visuals_index, const ExpressionVector3D &translate) {
 	(*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_translate"] = translate;
 	updateFromLua();
 }
 
-Vector3f Model::getVisualTranslate(int frame_id, int visuals_index) {
+ExpressionVector3D Model::getVisualTranslate(int frame_id, int visuals_index) {
 	return (*luaTable)["frames"][frame_id]["visuals"][visuals_index]["mesh_translate"] ;
 }
 
@@ -548,10 +549,10 @@ void Model::adjustParentVisualsScale (int frame_id, const Vector3f &old_r, const
 		return;
 
 	for (size_t i = 0; i < (*luaTable)["frames"][parent_id]["visuals"].length(); i++) {
-		Vector3f dimensions = (*luaTable)["frames"][parent_id]["visuals"][i + 1]["dimensions"];
-		Vector3f mesh_center = (*luaTable)["frames"][parent_id]["visuals"][i + 1]["mesh_center"];
+		ExpressionVector3D dimensions = (*luaTable)["frames"][parent_id]["visuals"][i + 1]["dimensions"];
+		ExpressionVector3D mesh_center = (*luaTable)["frames"][parent_id]["visuals"][i + 1]["mesh_center"];
 
-		Vector3f center_to_r = old_r - mesh_center;
+		Vector3f center_to_r = old_r - mesh_center.toVector3f(expressionVariables);
 		Vector3f delta_dim (
 				copysign(delta_r[0], center_to_r[0] * delta_r[0]),
 				copysign(delta_r[1], center_to_r[1] * delta_r[1]),
@@ -566,35 +567,36 @@ void Model::adjustParentVisualsScale (int frame_id, const Vector3f &old_r, const
 	}
 }
 
-void Model::setBodyMass (int frame_id, double mass) {
+void Model::setBodyMass (int frame_id, LuaParameterExpression mass) {
 	(*luaTable)["frames"][frame_id]["body"]["mass"] = mass;
 }
 
-double Model::getBodyMass (int frame_id) {
-	return (*luaTable)["frames"][frame_id]["body"]["mass"].getDefault(0.);
+LuaParameterExpression Model::getBodyMass (int frame_id) {
+	LuaParameterExpression e = (*luaTable)["frames"][frame_id]["body"]["mass"].get<LuaParameterExpression>();
+	return e;
 }
 
-void Model::setBodyCOM (int frame_id, const Vector3f &com) {
+void Model::setBodyCOM (int frame_id, const ExpressionVector3D &com) {
 	(*luaTable)["frames"][frame_id]["body"]["com"] = com;
 }
 
-Vector3f Model::getBodyCOM (int frame_id) {
-	return (*luaTable)["frames"][frame_id]["body"]["com"].getDefault(Vector3f::Zero(3,3));
+ExpressionVector3D Model::getBodyCOM (int frame_id) {
+	return (*luaTable)["frames"][frame_id]["body"]["com"].get<ExpressionVector3D>();
 }
 
-void Model::setBodyInertia (int frame_id, const Matrix33f &inertia) {
+void Model::setBodyInertia (int frame_id, const ExpressionMatrix33 &inertia) {
 	(*luaTable)["frames"][frame_id]["body"]["inertia"] = inertia;
 }
 
-Matrix33f Model::getBodyInertia (int frame_id) {
-	return (*luaTable)["frames"][frame_id]["body"]["inertia"].getDefault(Matrix33f::Zero(3,3));
+ExpressionMatrix33 Model::getBodyInertia (int frame_id) {
+	return (*luaTable)["frames"][frame_id]["body"]["inertia"].getDefault(ExpressionMatrix33());
 }
 
-void Model::setJointLocationLocal (int frame_id, const Vector3f &location) {
-	Vector3f old_location = (*luaTable)["frames"][frame_id]["joint_frame"]["r"];
+void Model::setJointLocationLocal (int frame_id, const ExpressionVector3D &location) {
+	ExpressionVector3D old_location = (*luaTable)["frames"][frame_id]["joint_frame"]["r"];
 	(*luaTable)["frames"][frame_id]["joint_frame"]["r"] = location;
 
-	adjustParentVisualsScale (frame_id, old_location, location);
+	adjustParentVisualsScale (frame_id, old_location.toVector3f(expressionVariables), location.toVector3f(expressionVariables));
 	
 	updateFromLua();
 }
@@ -606,17 +608,17 @@ void Model::setContactPointGlobal (int contact_point_index, const Vector3f &glob
 	RBDLVector3d point_global (global_coords[0], global_coords[1], global_coords[2]);
 	RBDLVector3d point_local = CalcBaseToBodyCoordinates (*rbdlModel, Q, frameIdToRbdlId[contact_point->frameId], point_global, false);
 
-	(*luaTable)["points"][contact_point_index]["point"] = Vector3f (point_local[0], point_local[1], point_local[2]);
+	(*luaTable)["points"][contact_point_index]["point"] = ExpressionVector3D (point_local[0], point_local[1], point_local[2]);
 
 	updateFromLua();
 }
 
-void Model::setContactPointLocal (int contact_point_index, const Vector3f &local_coords) {
+void Model::setContactPointLocal (int contact_point_index, const ExpressionVector3D &local_coords) {
 	(*luaTable)["points"][contact_point_index]["point"] = local_coords;
 	updateFromLua();
 }
 
-Vector3f Model::getContactPointLocal (int contact_point_index) const {
+ExpressionVector3D Model::getContactPointLocal (int contact_point_index) const {
 	return (*luaTable)["points"][contact_point_index]["point"];
 }
 
@@ -635,6 +637,35 @@ void Model::clearModel() {
 	frameIdToRbdlId.clear();
 }
 
+void Model::readVariablesFromLua() {
+	luaTable->pushRef();
+	int stackTop = lua_gettop(luaTable->L);
+
+	lua_getglobal (luaTable->L, "_expressions_variable_index");
+	std::string key;
+	double value;
+
+	if (lua_isnil(luaTable->L, -1)) {
+		lua_pop (luaTable->L, lua_gettop(luaTable->L) - stackTop);
+		luaTable->popRef();
+		return;
+	}
+	expressionVariables.clear();
+
+	lua_pushnil(luaTable->L);  // put "first" key on stack, table is now on -2
+	while (lua_next(luaTable->L, -2) != 0) { // pops the key from -1, pushes key to -2 and value to -1, table is now on -3
+		key = lua_tostring(luaTable->L, -2);
+
+		lua_pushstring(luaTable->L, "value"); // pushes a key to -1, table is now on -4, sub-table is now -2
+		lua_gettable(luaTable->L, -2); // pops the key at -1 and replaces it with the value of the variable
+		value = lua_tonumber(luaTable->L, -1); // gets the double at the top of the stack
+		lua_pop(luaTable->L, 2); // pops the value of the variable and the subtable, table is now on -2
+		expressionVariables[key] = value;
+	}
+	lua_pop (luaTable->L, lua_gettop(luaTable->L) - stackTop);
+	luaTable->popRef();
+}
+
 void Model::updateFromLua() {
 	clearModel();
 
@@ -643,6 +674,8 @@ void Model::updateFromLua() {
 	if ((*luaTable)["gravity"].exists()) {
 		rbdlModel->gravity = (*luaTable)["gravity"].get<RigidBodyDynamics::Math::Vector3d>();
 	}
+
+	readVariablesFromLua();
 
 	int frame_count = (*luaTable)["frames"].length();
 
@@ -661,7 +694,11 @@ void Model::updateFromLua() {
 			abort();
 		}
 
-		SpatialTransform joint_frame = (*luaTable)["frames"][i]["joint_frame"].getDefault(SpatialTransform());
+		SpatialTransform joint_frame = SpatialTransform();
+		joint_frame.r = (*luaTable)["frames"][i]["joint_frame"]["r"].getDefault<ExpressionVector3D>(ExpressionVector3D()).toVector3d(expressionVariables);
+		joint_frame.E = (*luaTable)["frames"][i]["joint_frame"]["E"].getDefault<RigidBodyDynamics::Math::Matrix3d>(
+				RigidBodyDynamics::Math::Matrix3d::Identity(3, 3));
+
         RigidBodyDynamics::Joint joint = (*luaTable)["frames"][i]["joint"].getDefault(RigidBodyDynamics::Joint(RigidBodyDynamics::JointTypeFixed));
         RigidBodyDynamics::Body body = (*luaTable)["frames"][i]["body"].getDefault(RigidBodyDynamics::Body());
 
@@ -697,8 +734,8 @@ void Model::updateFromLua() {
 			for (size_t vi = 1; vi <= (*luaTable)["frames"][i]["visuals"].length(); vi++) {
 				VisualsData visual_data = (*luaTable)["frames"][i]["visuals"][vi];
 
-				assert ((visual_data.scale + Vector3f (-1.f, -1.f, -1.f)).squaredNorm() < 1.0e-5 && "visuals.scale not (yet) supported!");
-				assert ((visual_data.translate - Vector3f (-1.f, -1.f, -1.f)).squaredNorm() < 1.0e-5 && "visuals.translate not (yet) supported!");
+				assert ((visual_data.scale + Vector3f (-1.f, -1.f, -1.f)).toVector3f(expressionVariables).squaredNorm() < 1.0e-5 && "visuals.scale not (yet) supported!");
+				assert ((visual_data.translate - Vector3f (-1.f, -1.f, -1.f)).toVector3f(expressionVariables).squaredNorm() < 1.0e-5 && "visuals.translate not (yet) supported!");
 
 				// setup of the scene object
 				VisualsObject* visual_scene_object = getVisualsObject (i, vi);
@@ -776,20 +813,20 @@ void Model::updateFromLua() {
 				visual_scene_object->mesh = mesh;
 
 				Transformation object_transformation = joint_scene_object->transformation;
-				if ( visual_data.dimensions.norm() < 1.0e-8) {
-					object_transformation.scaling = visual_data.scale;
+				if ( visual_data.dimensions.toVector3f(expressionVariables).norm() < 1.0e-8) {
+					object_transformation.scaling = visual_data.scale.toVector3f(expressionVariables);
 				} else {
 					// setup of the transformation
 					Vector3f bbox_size (mesh.bbox_max - mesh.bbox_min);
 					Vector3f scale (
-							fabs(visual_data.dimensions[0]) / bbox_size[0],
-							fabs(visual_data.dimensions[1]) / bbox_size[1],
-							fabs(visual_data.dimensions[2]) / bbox_size[2]
+							abs(visual_data.dimensions[0].evaluate(expressionVariables)) / bbox_size[0],
+							abs(visual_data.dimensions[1].evaluate(expressionVariables)) / bbox_size[1],
+							abs(visual_data.dimensions[2].evaluate(expressionVariables)) / bbox_size[2]
 							);
 					object_transformation.scaling = scale;
 				}
 
-				object_transformation.translation = object_transformation.translation + object_transformation.rotation.rotate (visual_data.mesh_center);
+				object_transformation.translation = object_transformation.translation + object_transformation.rotation.rotate (visual_data.mesh_center.toVector3f(expressionVariables));
 				
 				visual_scene_object->transformation = object_transformation;
 			}
@@ -823,7 +860,7 @@ void Model::updateFromLua() {
 			ContactPointObject* contact_point_scene_object = getContactPointObject (i);
 
 			contact_point_scene_object->pointIndex = i;
-			contact_point_scene_object->localCoords = (*luaTable)["points"][i]["point"].get<Vector3f>();
+			contact_point_scene_object->localCoords = (*luaTable)["points"][i]["point"].getDefault<ExpressionVector3D>(ExpressionVector3D());
 			contact_point_scene_object->name = (*luaTable)["points"][i]["name"].get<std::string>();
 			contact_point_scene_object->frameId = getFrameId((*luaTable)["points"][i]["body"].get<std::string>().c_str());
 
@@ -843,7 +880,7 @@ void Model::updateFromLua() {
 }
 
 void Model::loadStateFromFile (const char* filename) {
-	LuaTable state_table = LuaTable::fromFile (filename);
+	LuaTable state_table = luaTableFromFileWithExpressions (filename);
 	for (size_t i = 0; i < modelStateQ.size(); i++) {
 		modelStateQ[i] = state_table[i + 1];
 	}
@@ -856,7 +893,7 @@ void Model::saveStateToFile (const char* filename) {
 	for (size_t i = 0; i < modelStateQ.size(); i++) {
 		state_table[i + 1] = modelStateQ[i];
 	}
-	string table_str = state_table.orderedSerialize();
+	string table_str = serializeOrderedLuaTableWithExpressions(state_table, expressionVariables);
 	ofstream outfile (filename);
 	outfile << table_str;
 	outfile.close();
@@ -874,7 +911,7 @@ bool Model::loadFromFile(const char* filename) {
 
 	luaTable = new LuaTable();
 
-	LuaTable luatable_temp = LuaTable::fromFile (filename);
+	LuaTable luatable_temp = luaTableFromFileWithExpressions(filename);
 	*luaTable = luatable_temp;
 
 	updateFromLua();
@@ -886,8 +923,60 @@ void Model::saveToFile(const char* filename) {
 	assert (luaTable);
 	assert (rbdlModel);
 
-	string table_str = luaTable->orderedSerialize();
+	string table_str = serializeOrderedLuaTableWithExpressions(*luaTable, expressionVariables);
 	ofstream outfile (filename);
 	outfile << table_str;
 	outfile.close();
+}
+
+void Model::setVariable(std::string name, double value) {
+	expressionVariables[name] = value;
+
+	luaTable->pushRef();
+	int stackTop = lua_gettop(luaTable->L);
+	lua_getglobal (luaTable->L, "_expressions_variable_index");
+
+	if (lua_isnil(luaTable->L, -1)) {
+		lua_pop (luaTable->L, lua_gettop(luaTable->L) - stackTop);
+		luaTable->popRef();
+		return;
+	}
+
+	int stackIndex = lua_gettop(luaTable->L);
+
+	lua_createtable(luaTable->L, 0, 6);
+	int stackSubTable = lua_gettop(luaTable->L);
+
+	lua_pushstring(luaTable->L, "_type");
+	lua_pushstring(luaTable->L, "expression");
+	lua_settable(luaTable->L, stackSubTable);
+
+	lua_pushstring(luaTable->L, "operation");
+	lua_pushstring(luaTable->L, "var");
+	lua_settable(luaTable->L, stackSubTable);
+
+	lua_pushstring(luaTable->L, "p1");
+	lua_pushnil(luaTable->L);
+	lua_settable(luaTable->L, stackSubTable);
+
+	lua_pushstring(luaTable->L, "p2");
+	lua_pushnil(luaTable->L);
+	lua_settable(luaTable->L, stackSubTable);
+
+	lua_pushstring(luaTable->L, "name");
+	lua_pushstring(luaTable->L, name.c_str());
+	lua_settable(luaTable->L, stackSubTable);
+
+	lua_pushstring(luaTable->L, "value");
+	lua_pushnumber(luaTable->L, value);
+	lua_settable(luaTable->L, stackSubTable);
+
+	lua_pushstring(luaTable->L, name.c_str());
+	// now, our key is on top of our stack and our subtable value below, we need to swap them
+	lua_insert(luaTable->L, stackIndex + 1);
+	lua_settable(luaTable->L, stackIndex);
+
+	lua_pop (luaTable->L, lua_gettop(luaTable->L) - stackTop);
+	luaTable->popRef();
+	updateFromLua();
 }
